@@ -53,9 +53,10 @@ $router->addRoute('/', 'HomeController@index');
 $router->addDirectory(__DIR__ . '/pages');
 
 // Create and configure dispatcher.
-$dispatcher = new Dispatcher();
-$dispatcher->addRenderer('md', fn($file, $params) => markdown($file));
-$dispatcher->addRenderer('twig', fn($file, $params) => renderTwig($file, $params));
+$dispatcher = new Dispatcher([
+    'md' => fn ($file, $params) => renderMarkdown($file),
+    'twig' => fn($file, $params) => renderTwig($file, $params),
+]);
 
 // Handle request.
 try {

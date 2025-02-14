@@ -15,7 +15,7 @@ namespace Derafu\Routing\Parser;
 use Derafu\Routing\Contract\ParserInterface;
 use Derafu\Routing\Contract\RouteInterface;
 use Derafu\Routing\ValueObject\RouteMatch;
-use InvalidArgumentException;
+use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 
 /**
  * Parser that handles file-based routes.
@@ -114,10 +114,10 @@ final class FileSystemParser implements ParserInterface
     {
         $realPath = realpath($directory);
         if ($realPath === false || !is_dir($realPath)) {
-            throw new InvalidArgumentException(sprintf(
-                'Invalid directory: %s',
-                $directory
-            ));
+            throw new InvalidArgumentException([
+                'Invalid directory: {directory}',
+                'directory' => $directory,
+            ]);
         }
 
         if (!in_array($realPath, $this->directories)) {

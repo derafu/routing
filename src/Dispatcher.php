@@ -13,8 +13,9 @@ declare(strict_types=1);
 namespace Derafu\Routing;
 
 use Closure;
+use Derafu\Routing\Contract\DispatcherInterface;
 use Derafu\Routing\Contract\RouteMatchInterface;
-use Derafu\Routing\Exception\RouterException;
+use Derafu\Routing\Exception\DispatcherException;
 
 /**
  * A simple dispatcher that handles common route match cases.
@@ -27,27 +28,17 @@ use Derafu\Routing\Exception\RouterException;
  *   - Closure handlers.
  *   - Controller@action string notation.
  */
-final class Dispatcher
+final class Dispatcher implements DispatcherInterface
 {
     /**
-     * List of valid renderers according to extension.
+     * Dispatcher constructor and dependencies.
      *
-     * @var array<string,Closure>
+     * @param array<string,Closure> $renderers List of valid renderers according
+     * to the file extensions that are going to be handled.
      */
-    private array $renderers;
-
-    /**
-     * Adds a renderer for the rendering of files in Dispatcher::handleFile().
-     *
-     * @param string $extension
-     * @param Closure $renderer
-     * @return static
-     */
-    public function addRenderer(string $extension, Closure $renderer): static
+    public function __construct(private array $renderers = [])
     {
-        $this->renderers[$extension] = $renderer;
-
-        return $this;
+        $this->renderers = $renderers;
     }
 
     /**
@@ -55,7 +46,7 @@ final class Dispatcher
      *
      * @param RouteMatchInterface $match The route match to dispatch.
      * @return mixed The result of executing the handler.
-     * @throws RouterException If the handler cannot be dispatched.
+     * @throws DispatcherException If the handler cannot be dispatched.
      */
     public function dispatch(RouteMatchInterface $match): mixed
     {
@@ -77,10 +68,10 @@ final class Dispatcher
             return $handler($params);
         }
 
-        throw new RouterException(sprintf(
-            'Unable to dispatch handler of type: %s',
-            get_debug_type($handler)
-        ));
+        throw new DispatcherException([
+            'Unable to dispatch handler of type: {type}',
+            'type' => get_debug_type($handler),
+        ]);
     }
 
     /**
@@ -89,16 +80,17 @@ final class Dispatcher
      * @param string $file The file path.
      * @param array $params Parameters for the file handler.
      * @return string The processed file content.
-     * @throws RouterException If the file type is not supported.
+     * @throws DispatcherException If the file type is not supported.
      */
     private function handleFile(string $file, array $params): string
     {
         $extension = pathinfo($file, PATHINFO_EXTENSION);
 
         if (!isset($this->renderers[$extension])) {
-            throw new RouterException(
-                sprintf('Unsupported file type: %s', $extension)
-            );
+            throw new DispatcherException([
+                'Unsupported file type: {extension}',
+                'extension' => $extension,
+            ]);
         }
 
         return $this->renderers[$extension]($file, $params);
@@ -110,24 +102,27 @@ final class Dispatcher
      * @param string $handler The handler in "Controller@action" format.
      * @param array $params Parameters for the controller action.
      * @return mixed The result of the controller action.
-     * @throws RouterException If the controller or action cannot be found.
+     * @throws DispatcherException If the controller or action cannot be found.
      */
     private function handleControllerAction(string $handler, array $params): mixed
     {
         [$controller, $action] = explode('@', $handler);
 
         if (!class_exists($controller)) {
-            throw new RouterException(
-                sprintf('Controller not found: %s', $controller)
-            );
+            throw new DispatcherException([
+                'Controller not found: {controller}',
+                'controller' => $controller,
+            ]);
         }
 
         $instance = new $controller();
 
         if (!method_exists($instance, $action)) {
-            throw new RouterException(
-                sprintf('Action not found: %s::%s', $controller, $action)
-            );
+            throw new DispatcherException([
+                'Action not found: {controller}::{action}',
+                'controller' => $controller,
+                'action' => $action,
+            ]);
         }
 
         return $instance->$action($params);

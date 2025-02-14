@@ -29,27 +29,23 @@ $router->addParser(new FileSystemParser(
 // Add route manually for index.
 $router->addRoute('/', __DIR__ . '/../README.md');
 
-// Create Dispatcher.
-$dispatcher = new Dispatcher();
-
-// Add renderers to dispatcher.
+// Create Renderers.
 $twig = new TwigService([
     'paths' => [
         __DIR__ . '/__twig',
         __DIR__ . '/pages',
     ],
 ]);
-$dispatcher->addRenderer(
-    'twig',
-    fn ($file, $params) => $twig->render($file, $params)
-);
-$dispatcher->addRenderer(
-    'md',
-    function ($file, $params) use ($twig) {
+$renderers = [
+    'twig' => fn ($file, $params) => $twig->render($file, $params),
+    'md' => function ($file, $params) use ($twig) {
         $params['content'] = file_get_contents($file);
         return $twig->render('markdown', $params);
-    }
-);
+    },
+];
+
+// Create Dispatcher.
+$dispatcher = new Dispatcher($renderers);
 
 // Resolve and dispatch the request.
 try {

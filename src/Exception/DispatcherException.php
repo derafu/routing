@@ -12,11 +12,9 @@ declare(strict_types=1);
 
 namespace Derafu\Routing\Exception;
 
-use Derafu\Translation\Exception\Core\TranslatableRuntimeException as RuntimeException;
-
 /**
- * Base exception for all router related errors.
+ * Exception thrown when a dispatcher cannot handle de route.
  */
-class RouterException extends RuntimeException
+final class DispatcherException extends RouterException
 {
 }

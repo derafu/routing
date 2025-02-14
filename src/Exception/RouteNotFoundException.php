@@ -24,6 +24,6 @@ final class RouteNotFoundException extends RouterException
      */
     public function __construct(string $uri)
     {
-        parent::__construct(sprintf('No route found for "%s".', $uri));
+        parent::__construct(['No route found for "{uri}".', 'uri' => $uri]);
     }
 }
