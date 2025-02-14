@@ -91,9 +91,10 @@ $router-&gt;addRoute('/', 'HomeController@index');
 $router-&gt;addDirectory(__DIR__ . '/pages');
 
 // Create and configure dispatcher.
-$dispatcher = new Dispatcher();
-$dispatcher-&gt;addRenderer('md', fn($file, $params) =&gt; markdown($file));
-$dispatcher-&gt;addRenderer('twig', fn($file, $params) =&gt; renderTwig($file, $params));
+$dispatcher = new Dispatcher([
+    'md' =&gt; fn ($file, $params) =&gt; renderMarkdown($file),
+    'twig' =&gt; fn($file, $params) =&gt; renderTwig($file, $params),
+]);
 
 // Handle request.
 try {
