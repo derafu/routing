@@ -65,6 +65,18 @@ final class RouterTest extends TestCase
         $handler = function () {};
 
         return [
+            'empty' => [
+                '/',
+                'TestController@action',
+                '',
+                false,
+            ],
+            'root' => [
+                '/',
+                'TestController@action',
+                '/',
+                true,
+            ],
             'exact-match' => [
                 '/test',
                 'TestController@action',

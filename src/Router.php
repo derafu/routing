@@ -93,7 +93,7 @@ final class Router implements RouterInterface
      */
     public function match(?string $uri = null): RouteMatchInterface
     {
-        $uri = $this->normalizeUri($uri ?? $this->getCurrentUri());
+        $uri = $uri ?? $this->normalizeUri($this->getCurrentUri());
 
         // Try each parser until one returns a match.
         foreach ($this->parsers as $parser) {
