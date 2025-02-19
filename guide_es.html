@@ -46,8 +46,228 @@
     </nav>
 
     <div class="container">
-    <div class="markdown-body"><h1><a id="content-guía-en-español" href="guide_es.html#content-guía-en-español" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Guía en Español</h1>
-<p>Lo siento, es solo un ejemplo para el router. No hay guía acá.</p>
+    <div class="markdown-body"><h1><a id="content-derafu-routing---guía-de-uso-completa" href="guide_es.html#content-derafu-routing---guía-de-uso-completa" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Derafu Routing - Guía de Uso Completa</h1>
+<p>Derafu Routing es una biblioteca de enrutamiento PHP flexible que utiliza una arquitectura basada en parsers. En lugar de tener un router monolítico, separa la lógica de enrutamiento en parsers especializados, cada uno manejando diferentes tipos de rutas.</p>
+<ul class="table-of-contents">
+<li><a href="guide_es.html#content-instalación">Instalación</a></li>
+<li><a href="guide_es.html#content-conceptos-básicos">Conceptos Básicos</a>
+<ul>
+<li><a href="guide_es.html#content-arquitectura-de-parsers">Arquitectura de Parsers</a></li>
+</ul>
+</li>
+<li><a href="guide_es.html#content-tipos-de-rutas">Tipos de Rutas</a>
+<ul>
+<li><a href="guide_es.html#content-rutas-estáticas">Rutas Estáticas</a></li>
+<li><a href="guide_es.html#content-rutas-dinámicas">Rutas Dinámicas</a></li>
+<li><a href="guide_es.html#content-rutas-del-sistema-de-archivos">Rutas del Sistema de Archivos</a></li>
+</ul>
+</li>
+<li><a href="guide_es.html#content-usando-el-router">Usando el Router</a>
+<ul>
+<li><a href="guide_es.html#content-configuración-básica">Configuración Básica</a></li>
+<li><a href="guide_es.html#content-agregando-rutas">Agregando Rutas</a></li>
+<li><a href="guide_es.html#content-coincidencia-de-rutas">Coincidencia de Rutas</a></li>
+</ul>
+</li>
+<li><a href="guide_es.html#content-el-dispatcher">El Dispatcher</a></li>
+<li><a href="guide_es.html#content-uso-avanzado">Uso Avanzado</a>
+<ul>
+<li><a href="guide_es.html#content-ejemplo-de-parser-personalizado">Ejemplo de Parser Personalizado</a></li>
+</ul>
+</li>
+<li><a href="guide_es.html#content-mejores-prácticas">Mejores Prácticas</a></li>
+</ul>
+<h2><a id="content-instalación" href="guide_es.html#content-instalación" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Instalación</h2>
+<pre><code class="language-bash">composer require derafu/routing
+</code></pre>
+<h2><a id="content-conceptos-básicos" href="guide_es.html#content-conceptos-básicos" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Conceptos Básicos</h2>
+<h3><a id="content-arquitectura-de-parsers" href="guide_es.html#content-arquitectura-de-parsers" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Arquitectura de Parsers</h3>
+<p>El sistema de enrutamiento está construido alrededor de parsers especializados:</p>
+<ol>
+<li><strong>StaticParser</strong>: Maneja coincidencias exactas de rutas.</li>
+<li><strong>DynamicParser</strong>: Procesa rutas con parámetros.</li>
+<li><strong>FileSystemParser</strong>: Mapea URLs a archivos físicos.</li>
+</ol>
+<p>Cada parser implementa la interfaz <code>ParserInterface</code>:</p>
+<pre><code class="language-php">interface ParserInterface {
+    public function parse(string $uri, array $routes): ?RouteMatchInterface;
+    public function supports(RouteInterface $route): bool;
+}
+</code></pre>
+<h2><a id="content-tipos-de-rutas" href="guide_es.html#content-tipos-de-rutas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Tipos de Rutas</h2>
+<h3><a id="content-rutas-estáticas" href="guide_es.html#content-rutas-estáticas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas Estáticas</h3>
+<p>La forma más simple de enrutamiento, manejada por <code>StaticParser</code>:</p>
+<pre><code class="language-php">$router = new Router([new StaticParser()]);
+$router-&gt;addRoute('/about', 'PagesController@action');
+$router-&gt;addRoute('/contacto', 'ContactoController@show');
+</code></pre>
+<h3><a id="content-rutas-dinámicas" href="guide_es.html#content-rutas-dinámicas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas Dinámicas</h3>
+<p>Manejadas por <code>DynamicParser</code>, soportando varios tipos de parámetros:</p>
+<pre><code class="language-php">$router-&gt;addParser(new DynamicParser());
+
+// Parámetro básico.
+$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController@show');
+
+// Validación con expresiones regulares.
+$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController@show');
+
+// Parámetros opcionales.
+$router-&gt;addRoute('/blog/{año?}', 'BlogController@index');
+
+// Múltiples parámetros.
+$router-&gt;addRoute('/blog/{año}/{mes?}', 'BlogController@archivo');
+
+// Patrones complejos.
+$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController@perfil');
+</code></pre>
+<h3><a id="content-rutas-del-sistema-de-archivos" href="guide_es.html#content-rutas-del-sistema-de-archivos" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas del Sistema de Archivos</h3>
+<p>El <code>FileSystemParser</code> mapea URLs a archivos reales:</p>
+<pre><code class="language-php">$parser = new FileSystemParser(
+    directories: [__DIR__ . '/paginas'],
+    extensions: ['.html.twig', '.md']
+);
+$router-&gt;addParser($parser);
+</code></pre>
+<p>Estructura de directorios:</p>
+<pre><code>paginas/
+├── about.md           # Coincide con /about
+├── contacto.twig      # Coincide con /contacto
+└── blog/
+    ├── post-1.md     # Coincide con /blog/post-1
+    └── post-2.md     # Coincide con /blog/post-2
+</code></pre>
+<h2><a id="content-usando-el-router" href="guide_es.html#content-usando-el-router" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Usando el Router</h2>
+<h3><a id="content-configuración-básica" href="guide_es.html#content-configuración-básica" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Configuración Básica</h3>
+<pre><code class="language-php">use Derafu\Routing\Router;
+use Derafu\Routing\Parser\StaticParser;
+use Derafu\Routing\Parser\DynamicParser;
+
+$router = new Router([
+    new StaticParser(),
+    new DynamicParser(),
+]);
+</code></pre>
+<h3><a id="content-agregando-rutas" href="guide_es.html#content-agregando-rutas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Agregando Rutas</h3>
+<pre><code class="language-php">// Manejador tipo string (Controlador@acción).
+$router-&gt;addRoute('/usuarios', 'UsuarioController@index');
+
+// Manejador tipo Closure.
+$router-&gt;addRoute('/api/datos', function($params) {
+    return ['datos' =&gt; 'valor'];
+});
+
+// Manejador tipo array.
+$router-&gt;addRoute('/blog', [
+    'controller' =&gt; 'BlogController',
+    'action' =&gt; 'listar'
+]);
+
+// Rutas con nombre y parámetros.
+$router-&gt;addRoute(
+    route: '/usuarios/{id}',
+    handler: 'UsuarioController@show',
+    name: 'usuario.show',
+    parameters: ['activo' =&gt; true]
+);
+</code></pre>
+<h3><a id="content-coincidencia-de-rutas" href="guide_es.html#content-coincidencia-de-rutas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Coincidencia de Rutas</h3>
+<pre><code class="language-php">try {
+    $match = $router-&gt;match('/usuarios/123');
+    // $match-&gt;getHandler(): Retorna el manejador de la ruta.
+    // $match-&gt;getParameters(): Retorna los parámetros de la ruta.
+    // $match-&gt;getName(): Retorna el nombre de la ruta si está definido.
+} catch (RouteNotFoundException $e) {
+    // Manejar 404.
+}
+</code></pre>
+<h2><a id="content-el-dispatcher" href="guide_es.html#content-el-dispatcher" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>El Dispatcher</h2>
+<p>El dispatcher maneja la ejecución de las rutas coincidentes:</p>
+<pre><code class="language-php">$dispatcher = new Dispatcher([
+    'md' =&gt; function($file, $params) {
+        // Renderizar archivo markdown.
+        return parseMarkdown(file_get_contents($file));
+    },
+    'twig' =&gt; function($file, $params) {
+        // Renderizar plantilla Twig.
+        return $twig-&gt;render($file, $params);
+    }
+]);
+
+$resultado = $dispatcher-&gt;dispatch($match);
+</code></pre>
+<p><strong>Nota</strong>: Este es un <em>dispatcher</em> muy básico, se debe implementar uno propio.</p>
+<h2><a id="content-uso-avanzado" href="guide_es.html#content-uso-avanzado" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Uso Avanzado</h2>
+<h3><a id="content-ejemplo-de-parser-personalizado" href="guide_es.html#content-ejemplo-de-parser-personalizado" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Ejemplo de Parser Personalizado</h3>
+<pre><code class="language-php">class RegexParser implements ParserInterface
+{
+    public function parse(string $uri, array $routes): ?RouteMatchInterface
+    {
+        foreach ($routes as $route) {
+            if (!$this-&gt;supports($route)) {
+                continue;
+            }
+
+            // Lógica personalizada de coincidencia regex
+            if (preg_match($route-&gt;getPattern(), $uri, $matches)) {
+                return new RouteMatch(
+                    $route-&gt;getHandler(),
+                    $matches
+                );
+            }
+        }
+        return null;
+    }
+
+    public function supports(RouteInterface $route): bool
+    {
+        // Define qué rutas maneja este parser
+        return str_starts_with($route-&gt;getPattern(), '#');
+    }
+}
+</code></pre>
+<h2><a id="content-mejores-prácticas" href="guide_es.html#content-mejores-prácticas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Mejores Prácticas</h2>
+<ol>
+<li>
+<p><strong>Orden de los Parsers</strong>: Agregar parsers en orden de especificidad.</p>
+<ul>
+<li>StaticParser primero (más rápido, más específico).</li>
+<li>DynamicParser después.</li>
+<li>FileSystemParser al final (más flexible, pero más lento).</li>
+</ul>
+</li>
+<li>
+<p><strong>Organización de Rutas</strong>: Agrupar rutas relacionadas.</p>
+<pre><code class="language-php">// Gestión de usuarios
+$router-&gt;addRoute('/usuarios', 'UsuarioController@index');
+$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController@show');
+
+// Sistema de blog
+$router-&gt;addRoute('/blog', 'BlogController@index');
+$router-&gt;addRoute('/blog/{slug}', 'BlogController@show');
+</code></pre>
+</li>
+<li>
+<p><strong>Validación de Parámetros</strong>: Usar restricciones regex para mejor seguridad.</p>
+<pre><code class="language-php">// Asegurar que ID sea numérico.
+$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController@show');
+
+// Validar formato de nombre de usuario.
+$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController@perfil');
+</code></pre>
+</li>
+<li>
+<p><strong>Manejo de Errores</strong>: Siempre envolver coincidencias en try-catch.</p>
+<pre><code class="language-php">try {
+    $match = $router-&gt;match($uri);
+    $resultado = $dispatcher-&gt;dispatch($match);
+} catch (RouteNotFoundException $e) {
+    // Manejar 404.
+} catch (DispatcherException $e) {
+    // Manejar errores del dispatcher.
+}
+</code></pre>
+</li>
+</ol>
 </div>
 </div>
 
