@@ -58,7 +58,7 @@ final class Dispatcher implements DispatcherInterface
             return $this->handleFile($handler, $params);
         }
 
-        // Handle "Controller@action" strings.
+        // Handle "Controller::action" strings.
         if (is_string($handler) && str_contains($handler, '::')) {
             return $this->handleControllerAction($handler, $params);
         }
@@ -97,9 +97,9 @@ final class Dispatcher implements DispatcherInterface
     }
 
     /**
-     * Handles "Controller@action" style handlers.
+     * Handles "Controller::action" style handlers.
      *
-     * @param string $handler The handler in "Controller@action" format.
+     * @param string $handler The handler in "Controller::action" format.
      * @param array $params Parameters for the controller action.
      * @return mixed The result of the controller action.
      * @throws DispatcherException If the controller or action cannot be found.
