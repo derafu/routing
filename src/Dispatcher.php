@@ -26,7 +26,7 @@ use Derafu\Routing\Exception\DispatcherException;
  *
  *   - File based handlers with a renderer (eg.: .html.twig and .md).
  *   - Closure handlers.
- *   - Controller@action string notation.
+ *   - Controller::action string notation.
  */
 final class Dispatcher implements DispatcherInterface
 {
@@ -59,7 +59,7 @@ final class Dispatcher implements DispatcherInterface
         }
 
         // Handle "Controller@action" strings.
-        if (is_string($handler) && str_contains($handler, '@')) {
+        if (is_string($handler) && str_contains($handler, '::')) {
             return $this->handleControllerAction($handler, $params);
         }
 
@@ -106,7 +106,7 @@ final class Dispatcher implements DispatcherInterface
      */
     private function handleControllerAction(string $handler, array $params): mixed
     {
-        [$controller, $action] = explode('@', $handler);
+        [$controller, $action] = explode('::', $handler);
 
         if (!class_exists($controller)) {
             throw new DispatcherException([
