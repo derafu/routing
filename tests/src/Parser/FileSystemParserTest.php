@@ -13,11 +13,15 @@ declare(strict_types=1);
 namespace Derafu\TestsRouting\Parser;
 
 use Derafu\Routing\Parser\FileSystemParser;
+use Derafu\Routing\ValueObject\Route;
+use Derafu\Routing\ValueObject\RouteMatch;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Derafu\Routing\Parser\FileSystemParser
- */
+#[CoversClass(FileSystemParser::class)]
+#[CoversClass(Route::class)]
+#[CoversClass(RouteMatch::class)]
 final class FileSystemParserTest extends TestCase
 {
     private string $tempDir;
@@ -28,18 +32,19 @@ final class FileSystemParserTest extends TestCase
     {
         $this->tempDir = sys_get_temp_dir() . '/router-test-' . uniqid();
         mkdir($this->tempDir);
+        mkdir($this->tempDir . '/blog');
         $this->parser = new FileSystemParser([$this->tempDir], ['.html.twig', '.md']);
     }
 
     protected function tearDown(): void
     {
         array_map('unlink', glob($this->tempDir . '/*.*'));
+        array_map('unlink', glob($this->tempDir . '/blog/*.*'));
+        rmdir($this->tempDir . '/blog');
         rmdir($this->tempDir);
     }
 
-    /**
-     * @dataProvider fileRoutesProvider
-     */
+    #[DataProvider('fileRoutesProvider')]
     public function testParseFileRoutes(string $filename, string $uri, bool $shouldMatch): void
     {
         // Create test file.

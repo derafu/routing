@@ -13,27 +13,36 @@ declare(strict_types=1);
 namespace Derafu\TestsRouting;
 
 use Closure;
+use Derafu\Routing\Collection;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Parser\StaticParser;
 use Derafu\Routing\Router;
+use Derafu\Routing\ValueObject\Route;
+use Derafu\Routing\ValueObject\RouteMatch;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Derafu\Routing\Router
- */
+#[CoversClass(Router::class)]
+#[CoversClass(Collection::class)]
+#[CoversClass(StaticParser::class)]
+#[CoversClass(Route::class)]
+#[CoversClass(RouteMatch::class)]
+#[CoversClass(RouteNotFoundException::class)]
 final class RouterTest extends TestCase
 {
     private Router $router;
 
     protected function setUp(): void
     {
-        $this->router = new Router();
-        $this->router->addParser(new StaticParser());
+        $this->router = new Router(
+            parsers: [
+                new StaticParser(),
+            ]
+        );
     }
 
-    /**
-     * @dataProvider routeProvider
-     */
+    #[DataProvider('provideRoutes')]
     public function testAddAndMatchRoute(
         string $pattern,
         string|array|Closure $handler,
@@ -51,7 +60,7 @@ final class RouterTest extends TestCase
         }
     }
 
-    public static function routeProvider(): array
+    public static function provideRoutes(): array
     {
         $handler = function () {};
 

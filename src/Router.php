@@ -26,6 +26,13 @@ use Derafu\Routing\ValueObject\Route;
 final class Router implements RouterInterface
 {
     /**
+     * List of registered parsers.
+     *
+     * @var ParserInterface[]
+     */
+    private array $parsers;
+
+    /**
      * Collection of registered routes.
      *
      * @var CollectionInterface
@@ -33,18 +40,28 @@ final class Router implements RouterInterface
     private CollectionInterface $routes;
 
     /**
-     * List of registered parsers.
-     *
-     * @var ParserInterface[]
-     */
-    private array $parsers = [];
-
-    /**
      * Creates a new Router instance.
+     *
+     * @param array $parsers
+     * @param array $routes
      */
-    public function __construct()
+    public function __construct(array $parsers = [], array $routes = [])
     {
+        $this->parsers = $parsers;
         $this->routes = new Collection();
+
+        foreach ($routes as $index => $route) {
+            if (is_string($index)) {
+                $this->addRoute($index, $route);
+            } elseif (is_array($route)) {
+                $this->addRoute(
+                    $route['route'],
+                    $route['handler'],
+                    $route['name'] ?? null,
+                    $route['parameters'] ?? [],
+                );
+            }
+        }
     }
 
     /**
@@ -60,9 +77,13 @@ final class Router implements RouterInterface
     /**
      * {@inheritDoc}
      */
-    public function addRoute(string $route, string|array|Closure $handler): static
-    {
-        $this->routes->add(new Route($route, $handler));
+    public function addRoute(
+        string $route,
+        string|array|Closure $handler,
+        ?string $name = null,
+        array $parameters = []
+    ): static {
+        $this->routes->add(new Route($route, $handler, $name, $parameters));
 
         return $this;
     }

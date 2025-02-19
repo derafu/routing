@@ -35,6 +35,7 @@ final class Collection implements CollectionInterface
     public function add(RouteInterface $route): static
     {
         $this->routes[$route->getPattern()] = $route;
+
         return $this;
     }
 

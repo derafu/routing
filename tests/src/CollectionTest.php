@@ -14,11 +14,12 @@ namespace Derafu\TestsRouting;
 
 use Derafu\Routing\Collection;
 use Derafu\Routing\ValueObject\Route;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Derafu\Routing\Collection
- */
+#[CoversClass(Collection::class)]
+#[CoversClass(Route::class)]
 final class CollectionTest extends TestCase
 {
     private Collection $collection;
@@ -28,9 +29,7 @@ final class CollectionTest extends TestCase
         $this->collection = new Collection();
     }
 
-    /**
-     * @dataProvider routeProvider
-     */
+    #[DataProvider('routeProvider')]
     public function testAddAndGetRoute(Route $route): void
     {
         $this->collection->add($route);

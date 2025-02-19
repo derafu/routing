@@ -74,30 +74,59 @@ final class DynamicParser implements ParserInterface
      */
     private function buildPattern(string $routePattern): string
     {
-        $pattern = preg_quote($routePattern, '#');
-
-        // Handle optional parameters first.
-        $pattern = preg_replace(
-            '/\\\{([^:}?]+)\?}/',
-            '(?:\/(?P<$1>[^/]+))?',
-            $pattern
+        // Split the pattern in static and dynamic parts.
+        $segments = preg_split(
+            '/({[^}]+})/',
+            $routePattern,
+            -1,
+            PREG_SPLIT_DELIM_CAPTURE
         );
 
-        // Handle required parameters with custom regex.
-        $pattern = preg_replace(
-            '/\\\{([^:}]+):([^}]+)}/',
-            '(?P<$1>$2)',
-            $pattern
-        );
+        $pattern = '';
+        foreach ($segments as $segment) {
+            if (empty($segment)) {
+                continue;
+            }
 
-        // Handle required parameters without custom regex.
-        $pattern = preg_replace(
-            '/\\\{([^}]+)}/',
-            '(?P<$1>' . self::DEFAULT_PATTERN . ')',
-            $pattern
-        );
+            // Segment is dynamic.
+            if ($segment[0] === '{') {
+                $param = trim($segment, '{}');
 
-        return '#^' . $pattern . '$#';
+                // Check if parameter is optional.
+                if (str_ends_with($param, '?')) {
+                    $paramName = rtrim($param, '?');
+                    if (str_ends_with($pattern, '/')) {
+                        $pattern = rtrim($pattern, '/');
+                        $pattern .= '(?:/(?P<' . $paramName . '>' . self::DEFAULT_PATTERN . '))?';
+                    } else {
+                        $pattern .= '(?:/(?P<' . $paramName . '>' . self::DEFAULT_PATTERN . '))?';
+                    }
+                }
+                // Check if it has a custom regex.
+                elseif (str_contains($param, ':')) {
+                    [$paramName, $regex] = explode(':', $param, 2);
+                    $pattern .= '(?P<' . $paramName . '>' . $regex . ')';
+                }
+                // Regular parameter.
+                else {
+                    $pattern .= '(?P<' . $param . '>' . self::DEFAULT_PATTERN . ')';
+                }
+            }
+            // Segment is static.
+            else {
+                if ($pattern === '' && $segment[0] === '/') {
+                    $pattern .= '/';
+                    $segment = substr($segment, 1);
+                }
+                if ($segment !== '') {
+                    $pattern .= preg_quote($segment, '#');
+                }
+            }
+        }
+
+        $finalPattern = '#^' . $pattern . '$#';
+
+        return $finalPattern;
     }
 
     /**

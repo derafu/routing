@@ -14,11 +14,14 @@ namespace Derafu\TestsRouting\Parser;
 
 use Derafu\Routing\Parser\StaticParser;
 use Derafu\Routing\ValueObject\Route;
+use Derafu\Routing\ValueObject\RouteMatch;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Derafu\Routing\Parser\StaticParser
- */
+#[CoversClass(StaticParser::class)]
+#[CoversClass(Route::class)]
+#[CoversClass(RouteMatch::class)]
 final class StaticParserTest extends TestCase
 {
     private StaticParser $parser;
@@ -28,9 +31,7 @@ final class StaticParserTest extends TestCase
         $this->parser = new StaticParser();
     }
 
-    /**
-     * @dataProvider supportedRoutesProvider
-     */
+    #[DataProvider('supportedRoutesProvider')]
     public function testSupportsStaticRoutes(Route $route, bool $expected): void
     {
         $this->assertSame($expected, $this->parser->supports($route));

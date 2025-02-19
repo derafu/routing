@@ -14,16 +14,14 @@ namespace Derafu\TestsRouting\ValueObject;
 
 use Closure;
 use Derafu\Routing\ValueObject\Route;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Derafu\Routing\ValueObject\Route
- */
+#[CoversClass(Route::class)]
 final class RouteTest extends TestCase
 {
-    /**
-     * @dataProvider routeDataProvider
-     */
+    #[DataProvider('routeDataProvider')]
     public function testRouteGetters(
         string $pattern,
         string|array|Closure $handler,

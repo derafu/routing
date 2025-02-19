@@ -14,11 +14,14 @@ namespace Derafu\TestsRouting\Parser;
 
 use Derafu\Routing\Parser\DynamicParser;
 use Derafu\Routing\ValueObject\Route;
+use Derafu\Routing\ValueObject\RouteMatch;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \Derafu\Routing\Parser\DynamicParser
- */
+#[CoversClass(DynamicParser::class)]
+#[CoversClass(Route::class)]
+#[CoversClass(RouteMatch::class)]
 final class DynamicParserTest extends TestCase
 {
     private DynamicParser $parser;
@@ -28,9 +31,7 @@ final class DynamicParserTest extends TestCase
         $this->parser = new DynamicParser();
     }
 
-    /**
-     * @dataProvider dynamicRoutesProvider
-     */
+    #[DataProvider('dynamicRoutesProvider')]
     public function testParseDynamicRoutes(
         string $pattern,
         string $uri,
@@ -85,6 +86,60 @@ final class DynamicParserTest extends TestCase
                 '/blog/{year?}',
                 '/blog',
                 [],
+                true,
+            ],
+            'multiple-optional-parameters' => [
+                '/blog/{year?}/{month?}',
+                '/blog/2024',
+                ['year' => '2024'],
+                true,
+            ],
+            'multiple-optional-all-present' => [
+                '/blog/{year?}/{month?}',
+                '/blog/2024/12',
+                ['year' => '2024', 'month' => '12'],
+                true,
+            ],
+            'multiple-optional-all-missing' => [
+                '/blog/{year?}/{month?}',
+                '/blog',
+                [],
+                true,
+            ],
+            'required-and-optional' => [
+                '/users/{id}/posts/{slug?}',
+                '/users/123/posts',
+                ['id' => '123'],
+                true,
+            ],
+            'complex-regex' => [
+                '/users/{username:[a-z0-9_-]+}',
+                '/users/john_doe-123',
+                ['username' => 'john_doe-123'],
+                true,
+            ],
+            'complex-regex-no-match' => [
+                '/users/{username:[a-z0-9_-]+}',
+                '/users/john@doe',
+                [],
+                false,
+            ],
+            'trailing-slash' => [
+                '/users/{id}/',
+                '/users/123/',
+                ['id' => '123'],
+                true,
+            ],
+            'no-leading-slash' => [
+                'users/{id}',
+                'users/123',
+                ['id' => '123'],
+                true,
+            ],
+            'with-extension' => [
+                '/articles/{slug}.html',
+                '/articles/my-post.html',
+                ['slug' => 'my-post'],
                 true,
             ],
         ];
