@@ -3,7 +3,7 @@
 [![CI Workflow](https://github.com/derafu/routing/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/derafu/routing/actions/workflows/ci.yml?query=branch%3Amain)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-A lightweight, extensible PHP routing library that combines simplicity with power through its unique parser-based architecture.
+A lightweight, extensible PHP routing library that combines simplicity with power through its parser-based architecture.
 
 ## Features
 
@@ -50,7 +50,7 @@ $router->addParser(new StaticParser());
 $router->addParser(new FileSystemParser([__DIR__ . '/pages']));
 
 // Add routes.
-$router->addRoute('/', 'HomeController@index');
+$router->addRoute('/', 'HomeController::index');
 $router->addDirectory(__DIR__ . '/pages');
 
 // Create and configure dispatcher.
@@ -75,7 +75,7 @@ try {
 Handles exact route matches:
 
 ```php
-$router->addRoute('/about', 'PagesController@about');
+$router->addRoute('/about', 'PagesController::about');
 ```
 
 ### DynamicParser
@@ -83,8 +83,8 @@ $router->addRoute('/about', 'PagesController@about');
 Supports parameters and patterns:
 
 ```php
-$router->addRoute('/users/{id:\d+}', 'UserController@show');
-$router->addRoute('/blog/{year}/{slug}', 'BlogController@post');
+$router->addRoute('/users/{id:\d+}', 'UserController::show');
+$router->addRoute('/blog/{year}/{slug}', 'BlogController::post');
 ```
 
 ### FileSystemParser
@@ -140,8 +140,8 @@ URLs are automatically mapped to files:
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
 
-This library is licensed under the MIT License. See the `LICENSE` file for more details.
+This package is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
