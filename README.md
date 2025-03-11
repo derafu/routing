@@ -1,7 +1,11 @@
 # Derafu: Routing - Elegant PHP Router with Plugin Architecture
 
-[![CI Workflow](https://github.com/derafu/routing/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/derafu/routing/actions/workflows/ci.yml?query=branch%3Amain)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![GitHub last commit](https://img.shields.io/github/last-commit/derafu/routing/main)
+![CI Workflow](https://github.com/derafu/routing/actions/workflows/ci.yml/badge.svg?branch=main&event=push)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/derafu/routing)
+![GitHub Issues](https://img.shields.io/github/issues-raw/derafu/routing)
+![Total Downloads](https://poser.pugx.org/derafu/routing/downloads)
+![Monthly Downloads](https://poser.pugx.org/derafu/routing/d/monthly)
 
 A lightweight, extensible PHP routing library that combines simplicity with power through its parser-based architecture.
 
