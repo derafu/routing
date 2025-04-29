@@ -37,8 +37,8 @@ The simplest form of routing, handled by `StaticParser`:
 
 ```php
 $router = new Router([new StaticParser()]);
-$router->addRoute('/about', 'PagesController@action');
-$router->addRoute('/contact', 'ContactController@show');
+$router->addRoute('/about', 'PagesController::action');
+$router->addRoute('/contact', 'ContactController::show');
 ```
 
 ### Dynamic Routes
@@ -49,19 +49,19 @@ Handled by `DynamicParser`, supporting various parameter types:
 $router->addParser(new DynamicParser());
 
 // Basic parameter.
-$router->addRoute('/users/{id}', 'UserController@show');
+$router->addRoute('/users/{id}', 'UserController::show');
 
 // Regex validation.
-$router->addRoute('/users/{id:\d+}', 'UserController@show');
+$router->addRoute('/users/{id:\d+}', 'UserController::show');
 
 // Optional parameters.
-$router->addRoute('/blog/{year?}', 'BlogController@index');
+$router->addRoute('/blog/{year?}', 'BlogController::index');
 
 // Multiple parameters.
-$router->addRoute('/blog/{year}/{month?}', 'BlogController@archive');
+$router->addRoute('/blog/{year}/{month?}', 'BlogController::archive');
 
 // Complex patterns.
-$router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController@profile');
+$router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController::profile');
 ```
 
 ### File System Routes
@@ -104,8 +104,8 @@ $router = new Router([
 ### Adding Routes
 
 ```php
-// String handler (Controller@action).
-$router->addRoute('/users', 'UserController@index');
+// String handler (Controller::action).
+$router->addRoute('/users', 'UserController::index');
 
 // Closure handler.
 $router->addRoute('/api/data', function($params) {
@@ -121,7 +121,7 @@ $router->addRoute('/blog', [
 // Named routes with parameters.
 $router->addRoute(
     route: '/users/{id}',
-    handler: 'UserController@show',
+    handler: 'UserController::show',
     name: 'user.show',
     parameters: ['active' => true]
 );
@@ -204,21 +204,21 @@ class RegexParser implements ParserInterface
 2. **Route Organization**: Group related routes
    ```php
    // User management.
-   $router->addRoute('/users', 'UserController@index');
-   $router->addRoute('/users/{id}', 'UserController@show');
+   $router->addRoute('/users', 'UserController::index');
+   $router->addRoute('/users/{id}', 'UserController::show');
 
    // Blog system.
-   $router->addRoute('/blog', 'BlogController@index');
-   $router->addRoute('/blog/{slug}', 'BlogController@show');
+   $router->addRoute('/blog', 'BlogController::index');
+   $router->addRoute('/blog/{slug}', 'BlogController::show');
    ```
 
 3. **Parameter Validation**: Use regex constraints for better security.
    ```php
    // Ensure ID is numeric.
-   $router->addRoute('/users/{id:\d+}', 'UserController@show');
+   $router->addRoute('/users/{id:\d+}', 'UserController::show');
 
    // Validate username format.
-   $router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController@profile');
+   $router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController::profile');
    ```
 
 4. **Error Handling**: Always wrap matches in try-catch.

@@ -37,8 +37,8 @@ La forma más simple de enrutamiento, manejada por `StaticParser`:
 
 ```php
 $router = new Router([new StaticParser()]);
-$router->addRoute('/about', 'PagesController@action');
-$router->addRoute('/contacto', 'ContactoController@show');
+$router->addRoute('/about', 'PagesController::action');
+$router->addRoute('/contacto', 'ContactoController::show');
 ```
 
 ### Rutas Dinámicas
@@ -49,19 +49,19 @@ Manejadas por `DynamicParser`, soportando varios tipos de parámetros:
 $router->addParser(new DynamicParser());
 
 // Parámetro básico.
-$router->addRoute('/usuarios/{id}', 'UsuarioController@show');
+$router->addRoute('/usuarios/{id}', 'UsuarioController::show');
 
 // Validación con expresiones regulares.
-$router->addRoute('/usuarios/{id:\d+}', 'UsuarioController@show');
+$router->addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
 
 // Parámetros opcionales.
-$router->addRoute('/blog/{año?}', 'BlogController@index');
+$router->addRoute('/blog/{año?}', 'BlogController::index');
 
 // Múltiples parámetros.
-$router->addRoute('/blog/{año}/{mes?}', 'BlogController@archivo');
+$router->addRoute('/blog/{año}/{mes?}', 'BlogController::archivo');
 
 // Patrones complejos.
-$router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController@perfil');
+$router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
 ```
 
 ### Rutas del Sistema de Archivos
@@ -105,7 +105,7 @@ $router = new Router([
 
 ```php
 // Manejador tipo string (Controlador@acción).
-$router->addRoute('/usuarios', 'UsuarioController@index');
+$router->addRoute('/usuarios', 'UsuarioController::index');
 
 // Manejador tipo Closure.
 $router->addRoute('/api/datos', function($params) {
@@ -121,7 +121,7 @@ $router->addRoute('/blog', [
 // Rutas con nombre y parámetros.
 $router->addRoute(
     route: '/usuarios/{id}',
-    handler: 'UsuarioController@show',
+    handler: 'UsuarioController::show',
     name: 'usuario.show',
     parameters: ['activo' => true]
 );
@@ -204,21 +204,21 @@ class RegexParser implements ParserInterface
 2. **Organización de Rutas**: Agrupar rutas relacionadas.
    ```php
    // Gestión de usuarios
-   $router->addRoute('/usuarios', 'UsuarioController@index');
-   $router->addRoute('/usuarios/{id}', 'UsuarioController@show');
+   $router->addRoute('/usuarios', 'UsuarioController::index');
+   $router->addRoute('/usuarios/{id}', 'UsuarioController::show');
 
    // Sistema de blog
-   $router->addRoute('/blog', 'BlogController@index');
-   $router->addRoute('/blog/{slug}', 'BlogController@show');
+   $router->addRoute('/blog', 'BlogController::index');
+   $router->addRoute('/blog/{slug}', 'BlogController::show');
    ```
 
 3. **Validación de Parámetros**: Usar restricciones regex para mejor seguridad.
    ```php
    // Asegurar que ID sea numérico.
-   $router->addRoute('/usuarios/{id:\d+}', 'UsuarioController@show');
+   $router->addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
 
    // Validar formato de nombre de usuario.
-   $router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController@perfil');
+   $router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
    ```
 
 4. **Manejo de Errores**: Siempre envolver coincidencias en try-catch.
