@@ -72,27 +72,27 @@
 <h3><a id="content-rutas-estáticas" href="guide_es.html#content-rutas-estáticas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas Estáticas</h3>
 <p>La forma más simple de enrutamiento, manejada por <code>StaticParser</code>:</p>
 <pre><code class="line-numbers match-braces language-php">$router = new Router([new StaticParser()]);
-$router-&gt;addRoute('/about', 'PagesController@action');
-$router-&gt;addRoute('/contacto', 'ContactoController@show');
+$router-&gt;addRoute('/about', 'PagesController::action');
+$router-&gt;addRoute('/contacto', 'ContactoController::show');
 </code></pre>
 <h3><a id="content-rutas-dinámicas" href="guide_es.html#content-rutas-dinámicas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas Dinámicas</h3>
 <p>Manejadas por <code>DynamicParser</code>, soportando varios tipos de parámetros:</p>
 <pre><code class="line-numbers match-braces language-php">$router-&gt;addParser(new DynamicParser());
 
 // Parámetro básico.
-$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController@show');
+$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController::show');
 
 // Validación con expresiones regulares.
-$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController@show');
+$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
 
 // Parámetros opcionales.
-$router-&gt;addRoute('/blog/{año?}', 'BlogController@index');
+$router-&gt;addRoute('/blog/{año?}', 'BlogController::index');
 
 // Múltiples parámetros.
-$router-&gt;addRoute('/blog/{año}/{mes?}', 'BlogController@archivo');
+$router-&gt;addRoute('/blog/{año}/{mes?}', 'BlogController::archivo');
 
 // Patrones complejos.
-$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController@perfil');
+$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
 </code></pre>
 <h3><a id="content-rutas-del-sistema-de-archivos" href="guide_es.html#content-rutas-del-sistema-de-archivos" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas del Sistema de Archivos</h3>
 <p>El <code>FileSystemParser</code> mapea URLs a archivos reales:</p>
@@ -123,7 +123,7 @@ $router = new Router([
 </code></pre>
 <h3><a id="content-agregando-rutas" href="guide_es.html#content-agregando-rutas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Agregando Rutas</h3>
 <pre><code class="line-numbers match-braces language-php">// Manejador tipo string (Controlador@acción).
-$router-&gt;addRoute('/usuarios', 'UsuarioController@index');
+$router-&gt;addRoute('/usuarios', 'UsuarioController::index');
 
 // Manejador tipo Closure.
 $router-&gt;addRoute('/api/datos', function($params) {
@@ -139,7 +139,7 @@ $router-&gt;addRoute('/blog', [
 // Rutas con nombre y parámetros.
 $router-&gt;addRoute(
     route: '/usuarios/{id}',
-    handler: 'UsuarioController@show',
+    handler: 'UsuarioController::show',
     name: 'usuario.show',
     parameters: ['activo' =&gt; true]
 );
@@ -212,21 +212,21 @@ $resultado = $dispatcher-&gt;dispatch($match);
 <li>
 <p><strong>Organización de Rutas</strong>: Agrupar rutas relacionadas.</p>
 <pre><code class="line-numbers match-braces language-php">// Gestión de usuarios
-$router-&gt;addRoute('/usuarios', 'UsuarioController@index');
-$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController@show');
+$router-&gt;addRoute('/usuarios', 'UsuarioController::index');
+$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController::show');
 
 // Sistema de blog
-$router-&gt;addRoute('/blog', 'BlogController@index');
-$router-&gt;addRoute('/blog/{slug}', 'BlogController@show');
+$router-&gt;addRoute('/blog', 'BlogController::index');
+$router-&gt;addRoute('/blog/{slug}', 'BlogController::show');
 </code></pre>
 </li>
 <li>
 <p><strong>Validación de Parámetros</strong>: Usar restricciones regex para mejor seguridad.</p>
 <pre><code class="line-numbers match-braces language-php">// Asegurar que ID sea numérico.
-$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController@show');
+$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
 
 // Validar formato de nombre de usuario.
-$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController@perfil');
+$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
 </code></pre>
 </li>
 <li>
