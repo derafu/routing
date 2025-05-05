@@ -174,9 +174,10 @@ $url = $router->generate('about', [], UrlReferenceType::NETWORK_PATH);
 ```
 
 Available reference types are:
-- `ABSOLUTE_PATH`: Absolute path from root (default)
-- `ABSOLUTE_URL`: Complete URL with scheme and host
-- `NETWORK_PATH`: URL without scheme (useful for resources that work on both HTTP and HTTPS)
+
+- `ABSOLUTE_PATH`: Absolute path from root (default).
+- `ABSOLUTE_URL`: Complete URL with scheme and host.
+- `NETWORK_PATH`: URL without scheme (useful for resources that work on both HTTP and HTTPS).
 
 ## The Dispatcher
 
