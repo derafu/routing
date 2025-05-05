@@ -17,6 +17,7 @@ use Derafu\Routing\Collection;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Parser\StaticParser;
 use Derafu\Routing\Router;
+use Derafu\Routing\UrlGenerator;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -29,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Route::class)]
 #[CoversClass(RouteMatch::class)]
 #[CoversClass(RouteNotFoundException::class)]
+#[CoversClass(UrlGenerator::class)]
 final class RouterTest extends TestCase
 {
     private Router $router;

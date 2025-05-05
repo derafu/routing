@@ -14,6 +14,7 @@ namespace Derafu\Routing;
 
 use Derafu\Routing\Contract\CollectionInterface;
 use Derafu\Routing\Contract\RouteInterface;
+use Derafu\Routing\Exception\RouteNotFoundException;
 
 /**
  * A collection of routes stored in memory.
@@ -30,11 +31,24 @@ final class Collection implements CollectionInterface
     private array $routes = [];
 
     /**
+     * The registered routes indexed by name for quick lookup.
+     *
+     * @var array<string,RouteInterface>
+     */
+    private array $routesByName = [];
+
+    /**
      * {@inheritDoc}
      */
     public function add(RouteInterface $route): static
     {
         $this->routes[$route->getPattern()] = $route;
+
+        // Index the route by name if it has one.
+        $name = $route->getName();
+        if ($name !== null) {
+            $this->routesByName[$name] = $route;
+        }
 
         return $this;
     }
@@ -61,5 +75,25 @@ final class Collection implements CollectionInterface
     public function all(): array
     {
         return array_values($this->routes);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getByName(string $name): RouteInterface
+    {
+        if (!isset($this->routesByName[$name])) {
+            throw new RouteNotFoundException($name);
+        }
+
+        return $this->routesByName[$name];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function hasByName(string $name): bool
+    {
+        return isset($this->routesByName[$name]);
     }
 }

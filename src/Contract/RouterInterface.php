@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Derafu\Routing\Contract;
 
 use Closure;
+use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\RouteNotFoundException;
 
 /**
@@ -51,4 +52,37 @@ interface RouterInterface
      * @throws RouteNotFoundException When no route matches the given URI.
      */
     public function match(?string $uri = null): RouteMatchInterface;
+
+    /**
+     * Generates a URL or path for a specific route based on the given
+     * parameters.
+     *
+     * @param string $name The name of the route.
+     * @param array $parameters An array of parameters.
+     * @param UrlReferenceType $referenceType The type of reference to be
+     * generated.
+     * @return string The generated URL.
+     * @throws RouteNotFoundException If the named route doesn't exist.
+     */
+    public function generate(
+        string $name,
+        array $parameters = [],
+        UrlReferenceType $referenceType = UrlReferenceType::ABSOLUTE_PATH
+    ): string;
+
+    /**
+     * Sets the request context for URL generation.
+     *
+     * @param RequestContextInterface $context The request context.
+     * @return static Returns itself for method chaining
+     */
+    public function setContext(RequestContextInterface $context): static;
+
+    /**
+     * Gets the current request context.
+     *
+     * @return RequestContextInterface|null The current request context or null
+     * if not set.
+     */
+    public function getContext(): ?RequestContextInterface;
 }

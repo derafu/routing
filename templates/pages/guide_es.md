@@ -37,8 +37,8 @@ La forma más simple de enrutamiento, manejada por `StaticParser`:
 
 ```php
 $router = new Router([new StaticParser()]);
-$router->addRoute('/about', 'PagesController::action');
-$router->addRoute('/contacto', 'ContactoController::show');
+$router->addRoute('/about', 'PagesController::action', name: 'about');
+$router->addRoute('/contacto', 'ContactoController::show', name: 'contacto');
 ```
 
 ### Rutas Dinámicas
@@ -49,19 +49,19 @@ Manejadas por `DynamicParser`, soportando varios tipos de parámetros:
 $router->addParser(new DynamicParser());
 
 // Parámetro básico.
-$router->addRoute('/usuarios/{id}', 'UsuarioController::show');
+$router->addRoute('/usuarios/{id}', 'UsuarioController::show', name: 'usuario.show');
 
 // Validación con expresiones regulares.
-$router->addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
+$router->addRoute('/usuarios/{id:\d+}', 'UsuarioController::show', name: 'usuario.show');
 
 // Parámetros opcionales.
-$router->addRoute('/blog/{año?}', 'BlogController::index');
+$router->addRoute('/blog/{año?}', 'BlogController::index', name: 'blog.index');
 
 // Múltiples parámetros.
-$router->addRoute('/blog/{año}/{mes?}', 'BlogController::archivo');
+$router->addRoute('/blog/{año}/{mes?}', 'BlogController::archivo', name: 'blog.archivo');
 
 // Patrones complejos.
-$router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
+$router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil', name: 'usuario.perfil');
 ```
 
 ### Rutas del Sistema de Archivos
@@ -105,18 +105,18 @@ $router = new Router([
 
 ```php
 // Manejador tipo string (Controlador@acción).
-$router->addRoute('/usuarios', 'UsuarioController::index');
+$router->addRoute('/usuarios', 'UsuarioController::index', name: 'usuarios.index');
 
 // Manejador tipo Closure.
 $router->addRoute('/api/datos', function($params) {
     return ['datos' => 'valor'];
-});
+}, name: 'api.datos');
 
 // Manejador tipo array.
 $router->addRoute('/blog', [
     'controller' => 'BlogController',
     'action' => 'listar'
-]);
+], name: 'blog.index');
 
 // Rutas con nombre y parámetros.
 $router->addRoute(
@@ -139,6 +139,44 @@ try {
     // Manejar 404.
 }
 ```
+
+### Generación de URLs
+
+El router permite generar URLs a partir de rutas nombradas:
+
+```php
+// Configurar el contexto de la solicitud (necesario para URLs absolutas).
+$router->setContext(new RequestContext(
+    baseUrl: '/miapp',
+    scheme: 'https',
+    host: 'ejemplo.com'
+));
+
+// Generar URLs relativas.
+$url = $router->generate('usuario.show', ['id' => 123]); // /miapp/usuarios/123
+$url = $router->generate('blog.archivo', [
+    'año' => '2024',
+    'mes' => '03'
+]); // /miapp/blog/2024/03
+
+// Generar URL sin parámetro opcional.
+$url = $router->generate('blog.archivo', [
+    'año' => '2024'
+]); // /miapp/blog/2024
+
+// Generar URL absoluta.
+$url = $router->generate('about', [], UrlReferenceType::ABSOLUTE_URL);
+// https://ejemplo.com/miapp/about
+
+// Generar URL de red (sin esquema).
+$url = $router->generate('about', [], UrlReferenceType::NETWORK_PATH);
+// //ejemplo.com/miapp/about
+```
+
+Los tipos de referencia disponibles son:
+- `ABSOLUTE_PATH`: Ruta absoluta desde la raíz (por defecto)
+- `ABSOLUTE_URL`: URL completa con esquema y host
+- `NETWORK_PATH`: URL sin esquema (útil para recursos que funcionan tanto en HTTP como HTTPS)
 
 ## El Dispatcher
 
@@ -204,21 +242,21 @@ class RegexParser implements ParserInterface
 2. **Organización de Rutas**: Agrupar rutas relacionadas.
    ```php
    // Gestión de usuarios
-   $router->addRoute('/usuarios', 'UsuarioController::index');
-   $router->addRoute('/usuarios/{id}', 'UsuarioController::show');
+   $router->addRoute('/usuarios', 'UsuarioController::index', name: 'usuarios.index');
+   $router->addRoute('/usuarios/{id}', 'UsuarioController::show', name: 'usuarios.show');
 
    // Sistema de blog
-   $router->addRoute('/blog', 'BlogController::index');
-   $router->addRoute('/blog/{slug}', 'BlogController::show');
+   $router->addRoute('/blog', 'BlogController::index', name: 'blog.index');
+   $router->addRoute('/blog/{slug}', 'BlogController::show', name: 'blog.show');
    ```
 
 3. **Validación de Parámetros**: Usar restricciones regex para mejor seguridad.
    ```php
    // Asegurar que ID sea numérico.
-   $router->addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
+   $router->addRoute('/usuarios/{id:\d+}', 'UsuarioController::show', name: 'usuarios.show');
 
    // Validar formato de nombre de usuario.
-   $router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
+   $router->addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil', name: 'usuarios.perfil');
    ```
 
 4. **Manejo de Errores**: Siempre envolver coincidencias en try-catch.
@@ -231,4 +269,24 @@ class RegexParser implements ParserInterface
    } catch (DispatcherException $e) {
        // Manejar errores del dispatcher.
    }
+   ```
+
+5. **Generación de URLs**: Siempre usar nombres de ruta en lugar de URLs hardcodeadas.
+   ```php
+   // Mal
+   $url = '/usuarios/' . $id;
+
+   // Bien
+   $url = $router->generate('usuarios.show', ['id' => $id]);
+   ```
+
+6. **Contexto de Solicitud**: Configurar el contexto si se necesitan URLs absolutas.
+   ```php
+   $router->setContext(new RequestContext(
+       baseUrl: '/miapp',
+       scheme: 'https',
+       host: 'ejemplo.com',
+       httpPort: 80,
+       httpsPort: 443
+   ));
    ```

@@ -15,8 +15,11 @@ namespace Derafu\Routing;
 use Closure;
 use Derafu\Routing\Contract\CollectionInterface;
 use Derafu\Routing\Contract\ParserInterface;
+use Derafu\Routing\Contract\RequestContextInterface;
 use Derafu\Routing\Contract\RouteMatchInterface;
 use Derafu\Routing\Contract\RouterInterface;
+use Derafu\Routing\Contract\UrlGeneratorInterface;
+use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\ValueObject\Route;
 
@@ -40,15 +43,27 @@ final class Router implements RouterInterface
     private CollectionInterface $routes;
 
     /**
+     * URL generator for generating URLs from routes.
+     *
+     * @var UrlGeneratorInterface
+     */
+    private UrlGeneratorInterface $urlGenerator;
+
+    /**
      * Creates a new Router instance.
      *
      * @param array $parsers
      * @param array $routes
+     * @param UrlGeneratorInterface|null $urlGenerator
      */
-    public function __construct(array $parsers = [], array $routes = [])
-    {
+    public function __construct(
+        array $parsers = [],
+        array $routes = [],
+        ?UrlGeneratorInterface $urlGenerator = null
+    ) {
         $this->parsers = $parsers;
         $this->routes = new Collection();
+        $this->urlGenerator = $urlGenerator ?? new UrlGenerator($this->routes);
 
         foreach ($routes as $index => $route) {
             if (is_string($index)) {
@@ -104,6 +119,35 @@ final class Router implements RouterInterface
         }
 
         throw new RouteNotFoundException($uri);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function generate(
+        string $name,
+        array $parameters = [],
+        UrlReferenceType $referenceType = UrlReferenceType::ABSOLUTE_PATH
+    ): string {
+        return $this->urlGenerator->generate($name, $parameters, $referenceType);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function setContext(RequestContextInterface $context): static
+    {
+        $this->urlGenerator->setContext($context);
+
+        return $this;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getContext(): ?RequestContextInterface
+    {
+        return $this->urlGenerator->getContext();
     }
 
     /**

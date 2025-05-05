@@ -20,6 +20,7 @@ A lightweight, extensible PHP routing library that combines simplicity with powe
 - 🪶 Lightweight with zero dependencies.
 - ⚡ Fast pattern matching.
 - 🧪 Comprehensive test coverage.
+- 🔗 URL generation for named routes.
 
 ## Why Derafu\Routing?
 
@@ -54,7 +55,7 @@ $router->addParser(new StaticParser());
 $router->addParser(new FileSystemParser([__DIR__ . '/pages']));
 
 // Add routes.
-$router->addRoute('/', 'HomeController::index');
+$router->addRoute('/', 'HomeController::index', name: 'home');
 $router->addDirectory(__DIR__ . '/pages');
 
 // Create and configure dispatcher.
@@ -79,7 +80,7 @@ try {
 Handles exact route matches:
 
 ```php
-$router->addRoute('/about', 'PagesController::about');
+$router->addRoute('/about', 'PagesController::about', name: 'about');
 ```
 
 ### DynamicParser
@@ -87,8 +88,8 @@ $router->addRoute('/about', 'PagesController::about');
 Supports parameters and patterns:
 
 ```php
-$router->addRoute('/users/{id:\d+}', 'UserController::show');
-$router->addRoute('/blog/{year}/{slug}', 'BlogController::post');
+$router->addRoute('/users/{id:\d+}', 'UserController::show', name: 'user.show');
+$router->addRoute('/blog/{year}/{slug}', 'BlogController::post', name: 'blog.post');
 ```
 
 ### FileSystemParser
@@ -100,6 +101,30 @@ $router->addDirectory(__DIR__ . '/pages');
 // Examples:
 // /about maps to /pages/about.md
 // /contact maps to /pages/contact.html.twig
+```
+
+## URL Generation
+
+Generate URLs for named routes:
+
+```php
+// Set request context (needed for absolute URLs).
+$router->setContext(new RequestContext(
+    baseUrl: '/myapp',
+    scheme: 'https',
+    host: 'example.com'
+));
+
+// Generate URLs.
+$url = $router->generate('user.show', ['id' => 123]); // /myapp/users/123
+$url = $router->generate('blog.post', [
+    'year' => '2024',
+    'slug' => 'hello-world'
+]); // /myapp/blog/2024/hello-world
+
+// Generate absolute URL.
+$url = $router->generate('about', [], UrlReferenceType::ABSOLUTE_URL);
+// https://example.com/myapp/about
 ```
 
 ## Creating Custom Parsers

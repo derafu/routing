@@ -1,4 +1,4 @@
-# Derafu Routing - Comprehensive Usage Guide
+# Derafu Routing - Complete Usage Guide
 
 Derafu Routing is a flexible PHP routing library that uses a parser-based architecture. Instead of having a monolithic router, it separates routing logic into specialized parsers, each handling different types of routes.
 
@@ -10,7 +10,7 @@ Derafu Routing is a flexible PHP routing library that uses a parser-based archit
 composer require derafu/routing
 ```
 
-## Core Concepts
+## Basic Concepts
 
 ### Parser Architecture
 
@@ -37,8 +37,8 @@ The simplest form of routing, handled by `StaticParser`:
 
 ```php
 $router = new Router([new StaticParser()]);
-$router->addRoute('/about', 'PagesController::action');
-$router->addRoute('/contact', 'ContactController::show');
+$router->addRoute('/about', 'PagesController::action', name: 'about');
+$router->addRoute('/contact', 'ContactController::show', name: 'contact');
 ```
 
 ### Dynamic Routes
@@ -49,22 +49,22 @@ Handled by `DynamicParser`, supporting various parameter types:
 $router->addParser(new DynamicParser());
 
 // Basic parameter.
-$router->addRoute('/users/{id}', 'UserController::show');
+$router->addRoute('/users/{id}', 'UserController::show', name: 'user.show');
 
-// Regex validation.
-$router->addRoute('/users/{id:\d+}', 'UserController::show');
+// Validation with regular expressions.
+$router->addRoute('/users/{id:\d+}', 'UserController::show', name: 'user.show');
 
 // Optional parameters.
-$router->addRoute('/blog/{year?}', 'BlogController::index');
+$router->addRoute('/blog/{year?}', 'BlogController::index', name: 'blog.index');
 
 // Multiple parameters.
-$router->addRoute('/blog/{year}/{month?}', 'BlogController::archive');
+$router->addRoute('/blog/{year}/{month?}', 'BlogController::archive', name: 'blog.archive');
 
 // Complex patterns.
-$router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController::profile');
+$router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController::profile', name: 'user.profile');
 ```
 
-### File System Routes
+### Filesystem Routes
 
 The `FileSystemParser` maps URLs to actual files:
 
@@ -88,7 +88,7 @@ pages/
 
 ## Using the Router
 
-### Basic Setup
+### Basic Configuration
 
 ```php
 use Derafu\Routing\Router;
@@ -104,21 +104,21 @@ $router = new Router([
 ### Adding Routes
 
 ```php
-// String handler (Controller::action).
-$router->addRoute('/users', 'UserController::index');
+// String handler (Controller@action).
+$router->addRoute('/users', 'UserController::index', name: 'users.index');
 
 // Closure handler.
 $router->addRoute('/api/data', function($params) {
     return ['data' => 'value'];
-});
+}, name: 'api.data');
 
 // Array handler.
 $router->addRoute('/blog', [
     'controller' => 'BlogController',
     'action' => 'list'
-]);
+], name: 'blog.index');
 
-// Named routes with parameters.
+// Routes with name and parameters.
 $router->addRoute(
     route: '/users/{id}',
     handler: 'UserController::show',
@@ -127,22 +127,60 @@ $router->addRoute(
 );
 ```
 
-### Matching Routes
+### Route Matching
 
 ```php
 try {
     $match = $router->match('/users/123');
     // $match->getHandler(): Returns the route handler.
-    // $match->getParameters(): Returns route parameters.
-    // $match->getName(): Returns route name if set.
+    // $match->getParameters(): Returns the route parameters.
+    // $match->getName(): Returns the route name if defined.
 } catch (RouteNotFoundException $e) {
     // Handle 404.
 }
 ```
 
+### URL Generation
+
+The router allows generating URLs from named routes:
+
+```php
+// Set request context (needed for absolute URLs).
+$router->setContext(new RequestContext(
+    baseUrl: '/myapp',
+    scheme: 'https',
+    host: 'example.com'
+));
+
+// Generate relative URLs.
+$url = $router->generate('user.show', ['id' => 123]); // /myapp/users/123
+$url = $router->generate('blog.archive', [
+    'year' => '2024',
+    'month' => '03'
+]); // /myapp/blog/2024/03
+
+// Generate URL without optional parameter.
+$url = $router->generate('blog.archive', [
+    'year' => '2024'
+]); // /myapp/blog/2024
+
+// Generate absolute URL.
+$url = $router->generate('about', [], UrlReferenceType::ABSOLUTE_URL);
+// https://example.com/myapp/about
+
+// Generate network path URL.
+$url = $router->generate('about', [], UrlReferenceType::NETWORK_PATH);
+// //example.com/myapp/about
+```
+
+Available reference types are:
+- `ABSOLUTE_PATH`: Absolute path from root (default)
+- `ABSOLUTE_URL`: Complete URL with scheme and host
+- `NETWORK_PATH`: URL without scheme (useful for resources that work on both HTTP and HTTPS)
+
 ## The Dispatcher
 
-The dispatcher handles the execution of matched routes:
+The dispatcher handles the execution of matching routes:
 
 ```php
 $dispatcher = new Dispatcher([
@@ -159,7 +197,7 @@ $dispatcher = new Dispatcher([
 $result = $dispatcher->dispatch($match);
 ```
 
-**Note**: This is a very basic dispatcher, you should implement one by yourself.
+**Note**: This is a very basic *dispatcher*, you should implement your own.
 
 ## Advanced Usage
 
@@ -175,7 +213,7 @@ class RegexParser implements ParserInterface
                 continue;
             }
 
-            // Custom regex matching logic.
+            // Custom regex matching logic
             if (preg_match($route->getPattern(), $uri, $matches)) {
                 return new RouteMatch(
                     $route->getHandler(),
@@ -188,7 +226,7 @@ class RegexParser implements ParserInterface
 
     public function supports(RouteInterface $route): bool
     {
-        // Define what routes this parser handles.
+        // Define what routes this parser can handle
         return str_starts_with($route->getPattern(), '#');
     }
 }
@@ -197,28 +235,28 @@ class RegexParser implements ParserInterface
 ## Best Practices
 
 1. **Parser Order**: Add parsers in order of specificity.
-   - StaticParser first (fastest, most specific).
+   - StaticParser first (faster, more specific).
    - DynamicParser next.
-   - FileSystemParser last (most flexible, but slower).
+   - FileSystemParser last (more flexible but slower).
 
-2. **Route Organization**: Group related routes
+2. **Route Organization**: Group related routes.
    ```php
-   // User management.
-   $router->addRoute('/users', 'UserController::index');
-   $router->addRoute('/users/{id}', 'UserController::show');
+   // User management
+   $router->addRoute('/users', 'UserController::index', name: 'users.index');
+   $router->addRoute('/users/{id}', 'UserController::show', name: 'users.show');
 
-   // Blog system.
-   $router->addRoute('/blog', 'BlogController::index');
-   $router->addRoute('/blog/{slug}', 'BlogController::show');
+   // Blog system
+   $router->addRoute('/blog', 'BlogController::index', name: 'blog.index');
+   $router->addRoute('/blog/{slug}', 'BlogController::show', name: 'blog.show');
    ```
 
 3. **Parameter Validation**: Use regex constraints for better security.
    ```php
    // Ensure ID is numeric.
-   $router->addRoute('/users/{id:\d+}', 'UserController::show');
+   $router->addRoute('/users/{id:\d+}', 'UserController::show', name: 'users.show');
 
    // Validate username format.
-   $router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController::profile');
+   $router->addRoute('/users/{username:[a-z0-9_-]+}', 'UserController::profile', name: 'users.profile');
    ```
 
 4. **Error Handling**: Always wrap matches in try-catch.
@@ -231,4 +269,24 @@ class RegexParser implements ParserInterface
    } catch (DispatcherException $e) {
        // Handle dispatcher errors.
    }
+   ```
+
+5. **URL Generation**: Always use route names instead of hardcoded URLs.
+   ```php
+   // Bad
+   $url = '/users/' . $id;
+
+   // Good
+   $url = $router->generate('users.show', ['id' => $id]);
+   ```
+
+6. **Request Context**: Configure context if absolute URLs are needed.
+   ```php
+   $router->setContext(new RequestContext(
+       baseUrl: '/myapp',
+       scheme: 'https',
+       host: 'example.com',
+       httpPort: 80,
+       httpsPort: 443
+   ));
    ```
