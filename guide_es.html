@@ -41,6 +41,7 @@
 <li><a href="guide_es.html#content-configuración-básica">Configuración Básica</a></li>
 <li><a href="guide_es.html#content-agregando-rutas">Agregando Rutas</a></li>
 <li><a href="guide_es.html#content-coincidencia-de-rutas">Coincidencia de Rutas</a></li>
+<li><a href="guide_es.html#content-generación-de-urls">Generación de URLs</a></li>
 </ul>
 </li>
 <li><a href="guide_es.html#content-el-dispatcher">El Dispatcher</a></li>
@@ -72,27 +73,27 @@
 <h3><a id="content-rutas-estáticas" href="guide_es.html#content-rutas-estáticas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas Estáticas</h3>
 <p>La forma más simple de enrutamiento, manejada por <code>StaticParser</code>:</p>
 <pre><code class="line-numbers match-braces language-php">$router = new Router([new StaticParser()]);
-$router-&gt;addRoute('/about', 'PagesController::action');
-$router-&gt;addRoute('/contacto', 'ContactoController::show');
+$router-&gt;addRoute('/about', 'PagesController::action', name: 'about');
+$router-&gt;addRoute('/contacto', 'ContactoController::show', name: 'contacto');
 </code></pre>
 <h3><a id="content-rutas-dinámicas" href="guide_es.html#content-rutas-dinámicas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas Dinámicas</h3>
 <p>Manejadas por <code>DynamicParser</code>, soportando varios tipos de parámetros:</p>
 <pre><code class="line-numbers match-braces language-php">$router-&gt;addParser(new DynamicParser());
 
 // Parámetro básico.
-$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController::show');
+$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController::show', name: 'usuario.show');
 
 // Validación con expresiones regulares.
-$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
+$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController::show', name: 'usuario.show');
 
 // Parámetros opcionales.
-$router-&gt;addRoute('/blog/{año?}', 'BlogController::index');
+$router-&gt;addRoute('/blog/{año?}', 'BlogController::index', name: 'blog.index');
 
 // Múltiples parámetros.
-$router-&gt;addRoute('/blog/{año}/{mes?}', 'BlogController::archivo');
+$router-&gt;addRoute('/blog/{año}/{mes?}', 'BlogController::archivo', name: 'blog.archivo');
 
 // Patrones complejos.
-$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
+$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil', name: 'usuario.perfil');
 </code></pre>
 <h3><a id="content-rutas-del-sistema-de-archivos" href="guide_es.html#content-rutas-del-sistema-de-archivos" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Rutas del Sistema de Archivos</h3>
 <p>El <code>FileSystemParser</code> mapea URLs a archivos reales:</p>
@@ -123,18 +124,18 @@ $router = new Router([
 </code></pre>
 <h3><a id="content-agregando-rutas" href="guide_es.html#content-agregando-rutas" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Agregando Rutas</h3>
 <pre><code class="line-numbers match-braces language-php">// Manejador tipo string (Controlador@acción).
-$router-&gt;addRoute('/usuarios', 'UsuarioController::index');
+$router-&gt;addRoute('/usuarios', 'UsuarioController::index', name: 'usuarios.index');
 
 // Manejador tipo Closure.
 $router-&gt;addRoute('/api/datos', function($params) {
     return ['datos' =&gt; 'valor'];
-});
+}, name: 'api.datos');
 
 // Manejador tipo array.
 $router-&gt;addRoute('/blog', [
     'controller' =&gt; 'BlogController',
     'action' =&gt; 'listar'
-]);
+], name: 'blog.index');
 
 // Rutas con nombre y parámetros.
 $router-&gt;addRoute(
@@ -154,6 +155,41 @@ $router-&gt;addRoute(
     // Manejar 404.
 }
 </code></pre>
+<h3><a id="content-generación-de-urls" href="guide_es.html#content-generación-de-urls" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Generación de URLs</h3>
+<p>El router permite generar URLs a partir de rutas nombradas:</p>
+<pre><code class="line-numbers match-braces language-php">// Configurar el contexto de la solicitud (necesario para URLs absolutas).
+$router-&gt;setContext(new RequestContext(
+    baseUrl: '/miapp',
+    scheme: 'https',
+    host: 'ejemplo.com'
+));
+
+// Generar URLs relativas.
+$url = $router-&gt;generate('usuario.show', ['id' =&gt; 123]); // /miapp/usuarios/123
+$url = $router-&gt;generate('blog.archivo', [
+    'año' =&gt; '2024',
+    'mes' =&gt; '03'
+]); // /miapp/blog/2024/03
+
+// Generar URL sin parámetro opcional.
+$url = $router-&gt;generate('blog.archivo', [
+    'año' =&gt; '2024'
+]); // /miapp/blog/2024
+
+// Generar URL absoluta.
+$url = $router-&gt;generate('about', [], UrlReferenceType::ABSOLUTE_URL);
+// https://ejemplo.com/miapp/about
+
+// Generar URL de red (sin esquema).
+$url = $router-&gt;generate('about', [], UrlReferenceType::NETWORK_PATH);
+// //ejemplo.com/miapp/about
+</code></pre>
+<p>Los tipos de referencia disponibles son:</p>
+<ul>
+<li><code>ABSOLUTE_PATH</code>: Ruta absoluta desde la raíz (por defecto)</li>
+<li><code>ABSOLUTE_URL</code>: URL completa con esquema y host</li>
+<li><code>NETWORK_PATH</code>: URL sin esquema (útil para recursos que funcionan tanto en HTTP como HTTPS)</li>
+</ul>
 <h2><a id="content-el-dispatcher" href="guide_es.html#content-el-dispatcher" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>El Dispatcher</h2>
 <p>El dispatcher maneja la ejecución de las rutas coincidentes:</p>
 <pre><code class="line-numbers match-braces language-php">$dispatcher = new Dispatcher([
@@ -212,21 +248,21 @@ $resultado = $dispatcher-&gt;dispatch($match);
 <li>
 <p><strong>Organización de Rutas</strong>: Agrupar rutas relacionadas.</p>
 <pre><code class="line-numbers match-braces language-php">// Gestión de usuarios
-$router-&gt;addRoute('/usuarios', 'UsuarioController::index');
-$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController::show');
+$router-&gt;addRoute('/usuarios', 'UsuarioController::index', name: 'usuarios.index');
+$router-&gt;addRoute('/usuarios/{id}', 'UsuarioController::show', name: 'usuarios.show');
 
 // Sistema de blog
-$router-&gt;addRoute('/blog', 'BlogController::index');
-$router-&gt;addRoute('/blog/{slug}', 'BlogController::show');
+$router-&gt;addRoute('/blog', 'BlogController::index', name: 'blog.index');
+$router-&gt;addRoute('/blog/{slug}', 'BlogController::show', name: 'blog.show');
 </code></pre>
 </li>
 <li>
 <p><strong>Validación de Parámetros</strong>: Usar restricciones regex para mejor seguridad.</p>
 <pre><code class="line-numbers match-braces language-php">// Asegurar que ID sea numérico.
-$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController::show');
+$router-&gt;addRoute('/usuarios/{id:\d+}', 'UsuarioController::show', name: 'usuarios.show');
 
 // Validar formato de nombre de usuario.
-$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil');
+$router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::perfil', name: 'usuarios.perfil');
 </code></pre>
 </li>
 <li>
@@ -239,6 +275,26 @@ $router-&gt;addRoute('/usuarios/{username:[a-z0-9_-]+}', 'UsuarioController::per
 } catch (DispatcherException $e) {
     // Manejar errores del dispatcher.
 }
+</code></pre>
+</li>
+<li>
+<p><strong>Generación de URLs</strong>: Siempre usar nombres de ruta en lugar de URLs hardcodeadas.</p>
+<pre><code class="line-numbers match-braces language-php">// Mal
+$url = '/usuarios/' . $id;
+
+// Bien
+$url = $router-&gt;generate('usuarios.show', ['id' =&gt; $id]);
+</code></pre>
+</li>
+<li>
+<p><strong>Contexto de Solicitud</strong>: Configurar el contexto si se necesitan URLs absolutas.</p>
+<pre><code class="line-numbers match-braces language-php">$router-&gt;setContext(new RequestContext(
+    baseUrl: '/miapp',
+    scheme: 'https',
+    host: 'ejemplo.com',
+    httpPort: 80,
+    httpsPort: 443
+));
 </code></pre>
 </li>
 </ol>

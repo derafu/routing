@@ -39,6 +39,7 @@
 <li>🪶 Lightweight with zero dependencies.</li>
 <li>⚡ Fast pattern matching.</li>
 <li>🧪 Comprehensive test coverage.</li>
+<li>🔗 URL generation for named routes.</li>
 </ul>
 <h2><a id="content-why-derafurouting" href="index.html#content-why-derafurouting" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Why Derafu\Routing?</h2>
 <p>Unlike traditional monolithic routers, Derafu\Routing uses a unique parser-based architecture that offers several advantages:</p>
@@ -66,7 +67,7 @@ $router-&gt;addParser(new StaticParser());
 $router-&gt;addParser(new FileSystemParser([__DIR__ . '/pages']));
 
 // Add routes.
-$router-&gt;addRoute('/', 'HomeController::index');
+$router-&gt;addRoute('/', 'HomeController::index', name: 'home');
 $router-&gt;addDirectory(__DIR__ . '/pages');
 
 // Create and configure dispatcher.
@@ -86,12 +87,12 @@ try {
 <h2><a id="content-available-parsers" href="index.html#content-available-parsers" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Available Parsers</h2>
 <h3><a id="content-staticparser" href="index.html#content-staticparser" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>StaticParser</h3>
 <p>Handles exact route matches:</p>
-<pre><code class="line-numbers match-braces language-php">$router-&gt;addRoute('/about', 'PagesController::about');
+<pre><code class="line-numbers match-braces language-php">$router-&gt;addRoute('/about', 'PagesController::about', name: 'about');
 </code></pre>
 <h3><a id="content-dynamicparser" href="index.html#content-dynamicparser" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>DynamicParser</h3>
 <p>Supports parameters and patterns:</p>
-<pre><code class="line-numbers match-braces language-php">$router-&gt;addRoute('/users/{id:\d+}', 'UserController::show');
-$router-&gt;addRoute('/blog/{year}/{slug}', 'BlogController::post');
+<pre><code class="line-numbers match-braces language-php">$router-&gt;addRoute('/users/{id:\d+}', 'UserController::show', name: 'user.show');
+$router-&gt;addRoute('/blog/{year}/{slug}', 'BlogController::post', name: 'blog.post');
 </code></pre>
 <h3><a id="content-filesystemparser" href="index.html#content-filesystemparser" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>FileSystemParser</h3>
 <p>Maps URLs to files in directories:</p>
@@ -99,6 +100,26 @@ $router-&gt;addRoute('/blog/{year}/{slug}', 'BlogController::post');
 // Examples:
 // /about maps to /pages/about.md
 // /contact maps to /pages/contact.html.twig
+</code></pre>
+<h2><a id="content-url-generation" href="index.html#content-url-generation" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>URL Generation</h2>
+<p>Generate URLs for named routes:</p>
+<pre><code class="line-numbers match-braces language-php">// Set request context (needed for absolute URLs).
+$router-&gt;setContext(new RequestContext(
+    baseUrl: '/myapp',
+    scheme: 'https',
+    host: 'example.com'
+));
+
+// Generate URLs.
+$url = $router-&gt;generate('user.show', ['id' =&gt; 123]); // /myapp/users/123
+$url = $router-&gt;generate('blog.post', [
+    'year' =&gt; '2024',
+    'slug' =&gt; 'hello-world'
+]); // /myapp/blog/2024/hello-world
+
+// Generate absolute URL.
+$url = $router-&gt;generate('about', [], UrlReferenceType::ABSOLUTE_URL);
+// https://example.com/myapp/about
 </code></pre>
 <h2><a id="content-creating-custom-parsers" href="index.html#content-creating-custom-parsers" class="text-decoration-none small text-muted" aria-hidden="true" title="Permalink"><i class="fa-solid fa-link"></i> </a>Creating Custom Parsers</h2>
 <p>Implement your own routing strategy by creating a parser:</p>
