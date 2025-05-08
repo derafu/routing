@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Derafu\Routing\ValueObject;
 
 use Closure;
+use Derafu\Routing\Contract\RouteInterface;
 use Derafu\Routing\Contract\RouteMatchInterface;
 
 /**
@@ -23,15 +24,13 @@ final class RouteMatch implements RouteMatchInterface
     /**
      * Creates a new Match instance.
      *
-     * @param string|array|Closure $handler The matched route handler.
+     * @param RouteInterface $route The matched route.
      * @param array $parameters Parameters extracted from the URI and route.
-     * @param string|null $name Optional name of the matched route.
      * @param string|null $module Optional module for the matched route.
      */
     public function __construct(
-        private readonly string|array|Closure $handler,
+        private readonly RouteInterface $route,
         private readonly array $parameters = [],
-        private readonly ?string $name = null,
         private readonly ?string $module = null
     ) {
     }
@@ -39,9 +38,17 @@ final class RouteMatch implements RouteMatchInterface
     /**
      * {@inheritDoc}
      */
+    public function getName(): string
+    {
+        return $this->route->getName();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function getHandler(): string|array|Closure
     {
-        return $this->handler;
+        return $this->route->getHandler();
     }
 
     /**
@@ -50,14 +57,6 @@ final class RouteMatch implements RouteMatchInterface
     public function getParameters(): array
     {
         return $this->parameters;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getName(): ?string
-    {
-        return $this->name;
     }
 
     /**

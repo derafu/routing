@@ -24,6 +24,13 @@ use Closure;
 interface RouteMatchInterface
 {
     /**
+     * Gets the name of the matched route.
+     *
+     * @return string Returns the route name.
+     */
+    public function getName(): string;
+
+    /**
      * Gets the handler that should process this match.
      *
      * @return string|array|Closure Returns the matched route handler.
@@ -34,18 +41,11 @@ interface RouteMatchInterface
      * Gets the parameters extracted from the URI and route configuration.
      *
      * This includes both parameters extracted from the URI pattern and any
-     * additional parameters defined in the route.
+     * default parameters defined in the route configuration.
      *
      * @return array Returns an array of parameters.
      */
     public function getParameters(): array;
-
-    /**
-     * Gets the name of the matched route if one was assigned.
-     *
-     * @return string|null Returns the route name or `null` if none was set.
-     */
-    public function getName(): ?string;
 
     /**
      * Gets the module associated with this match if one exists.

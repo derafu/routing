@@ -34,8 +34,8 @@ final class CollectionTest extends TestCase
     {
         $this->collection->add($route);
 
-        $this->assertSame($route, $this->collection->get($route->getPattern()));
-        $this->assertTrue($this->collection->has($route->getPattern()));
+        $this->assertSame($route, $this->collection->get($route->getPath()));
+        $this->assertTrue($this->collection->has($route->getPath()));
     }
 
     public function testGetNonExistentRoute(): void
@@ -60,16 +60,16 @@ final class CollectionTest extends TestCase
     {
         return [
             'simple-route' => [
-                new Route('/test', 'TestController@action'),
+                new Route('test_route', '/test', 'TestController@action'),
             ],
             'named-route' => [
-                new Route('/users', 'UserController@index', 'users.index'),
+                new Route('users_index', '/users', 'UserController@index'),
             ],
             'parameterized-route' => [
-                new Route('/users/{id}', 'UserController@show', 'users.show', ['id' => 1]),
+                new Route('users_show', '/users/{id}', 'UserController@show', ['id' => 1]),
             ],
             'closure-route' => [
-                new Route('/api/data', fn () => []),
+                new Route('api_data', '/api/data', fn () => []),
             ],
         ];
     }

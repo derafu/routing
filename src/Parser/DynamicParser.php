@@ -44,13 +44,12 @@ final class DynamicParser implements ParserInterface
                 continue;
             }
 
-            $pattern = $this->buildPattern($route->getPattern());
+            $pattern = $this->buildPattern($route->getPath());
             if (preg_match($pattern, $uri, $matches)) {
                 $parameters = $this->extractParameters($matches);
                 return new RouteMatch(
-                    $route->getHandler(),
-                    array_merge($parameters, $route->getParameters()),
-                    $route->getName()
+                    $route,
+                    array_merge($route->getDefaults(), $parameters),
                 );
             }
         }
@@ -63,7 +62,7 @@ final class DynamicParser implements ParserInterface
      */
     public function supports(RouteInterface $route): bool
     {
-        return str_contains($route->getPattern(), '{');
+        return str_contains($route->getPath(), '{');
     }
 
     /**

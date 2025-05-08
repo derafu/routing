@@ -42,7 +42,7 @@ final class Collection implements CollectionInterface
      */
     public function add(RouteInterface $route): static
     {
-        $this->routes[$route->getPattern()] = $route;
+        $this->routes[$route->getPath()] = $route;
 
         // Index the route by name if it has one.
         $name = $route->getName();

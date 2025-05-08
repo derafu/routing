@@ -41,39 +41,39 @@ final class UrlGeneratorTest extends TestCase
 
         // Configurar rutas de prueba
         $this->collection->add(new Route(
-            pattern: '/',
-            handler: 'HomeController@index',
-            name: 'home'
+            name: 'home',
+            path: '/',
+            handler: 'HomeController@index'
         ));
 
         $this->collection->add(new Route(
-            pattern: '/users/{id:\d+}',
-            handler: 'UserController@show',
-            name: 'user.show'
+            name: 'user.show',
+            path: '/users/{id:\d+}',
+            handler: 'UserController@show'
         ));
 
         $this->collection->add(new Route(
-            pattern: '/posts/{slug}',
-            handler: 'PostController@show',
-            name: 'post.show'
+            name: 'post.show',
+            path: '/posts/{slug}',
+            handler: 'PostController@show'
         ));
 
         $this->collection->add(new Route(
-            pattern: '/search',
-            handler: 'SearchController@index',
-            name: 'search'
+            name: 'search',
+            path: '/search',
+            handler: 'SearchController@index'
         ));
 
         $this->collection->add(new Route(
-            pattern: '/blog/{year}/{month?}',
-            handler: 'BlogController@archive',
-            name: 'blog.archive'
+            name: 'blog.archive',
+            path: '/blog/{year}/{month?}',
+            handler: 'BlogController@archive'
         ));
 
         $this->collection->add(new Route(
-            pattern: '/users/{username:[a-z0-9_-]+}',
-            handler: 'UserController@profile',
-            name: 'user.profile'
+            name: 'user.profile',
+            path: '/users/{username:[a-z0-9_-]+}',
+            handler: 'UserController@profile'
         ));
     }
 

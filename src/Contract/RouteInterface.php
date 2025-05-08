@@ -23,11 +23,20 @@ use Closure;
 interface RouteInterface
 {
     /**
-     * Gets the URI pattern for this route.
+     * Gets the route name.
      *
-     * @return string Returns the URI pattern.
+     * @return string Returns the route name.
      */
-    public function getPattern(): string;
+    public function getName(): string;
+
+    /**
+     * Gets the URI path for this route.
+     *
+     * This path can include patterns for validations of parameters.
+     *
+     * @return string Returns the URI path.
+     */
+    public function getPath(): string;
 
     /**
      * Gets the handler for this route.
@@ -40,16 +49,16 @@ interface RouteInterface
     public function getHandler(): string|array|Closure;
 
     /**
-     * Gets the route name if one was assigned.
+     * Gets the default values for the parameters of this route.
      *
-     * @return string|null Returns the route name or `null` if none was set.
+     * @return array Returns an array of default values.
      */
-    public function getName(): ?string;
+    public function getDefaults(): array;
 
     /**
-     * Gets any additional parameters defined for this route.
+     * Gets the methods allowed for this route.
      *
-     * @return array Returns an array of route parameters.
+     * @return array Returns an array of methods allowed for this route.
      */
-    public function getParameters(): array;
+    public function getMethods(): array;
 }

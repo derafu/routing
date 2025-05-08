@@ -13,25 +13,29 @@ declare(strict_types=1);
 namespace Derafu\TestsRouting\ValueObject;
 
 use Closure;
+use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(RouteMatch::class)]
+#[CoversClass(Route::class)]
 final class RouteMatchTest extends TestCase
 {
     #[DataProvider('matchDataProvider')]
     public function testMatchGetters(
+        string $name,
+        string $path,
         string|array|Closure $handler,
-        array $parameters,
-        ?string $name,
+        array $defaults,
         ?string $module
     ): void {
-        $match = new RouteMatch($handler, $parameters, $name, $module);
+        $route = new Route($name, $path, $handler, $defaults);
+        $match = new RouteMatch($route, $route->getDefaults(), $module);
 
         $this->assertSame($handler, $match->getHandler());
-        $this->assertSame($parameters, $match->getParameters());
+        $this->assertSame($defaults, $match->getParameters());
         $this->assertSame($name, $match->getName());
         $this->assertSame($module, $match->getModule());
     }
@@ -42,27 +46,31 @@ final class RouteMatchTest extends TestCase
 
         return [
             'full-match' => [
+                'user.show',
+                '/users/{id}',
                 'UserController@show',
                 ['id' => 1],
-                'user.show',
                 'admin',
             ],
             'closure-match' => [
+                'api.handler',
+                '/api/data',
                 $closure,
                 ['data' => 'test'],
-                'api.handler',
                 null,
             ],
             'minimal-match' => [
+                'homepage',
+                '/',
                 'HomeController@index',
                 [],
                 null,
-                null,
             ],
             'array-handler-match' => [
-                ['controller' => 'BlogController', 'action' => 'list'],
-                ['page' => 1],
                 'blog.list',
+                '/blog',
+                ['controller' => 'BlogController', 'action' => 'index'],
+                [],
                 'blog',
             ],
         ];

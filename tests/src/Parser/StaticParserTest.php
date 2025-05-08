@@ -39,7 +39,7 @@ final class StaticParserTest extends TestCase
 
     public function testParseMatchesExactRoute(): void
     {
-        $route = new Route('/test', 'TestController@action');
+        $route = new Route('test_route', '/test', 'TestController@action');
         $routes = [$route];
 
         $match = $this->parser->parse('/test', $routes);
@@ -50,7 +50,7 @@ final class StaticParserTest extends TestCase
 
     public function testParseReturnsNullForNonMatch(): void
     {
-        $routes = [new Route('/test', 'TestController@action')];
+        $routes = [new Route('test_route', '/test', 'TestController@action')];
         $this->assertNull($this->parser->parse('/non-existent', $routes));
     }
 
@@ -58,15 +58,15 @@ final class StaticParserTest extends TestCase
     {
         return [
             'static-route' => [
-                new Route('/test', 'TestController@action'),
+                new Route('test_route', '/test', 'TestController@action'),
                 true,
             ],
             'dynamic-route' => [
-                new Route('/users/{id}', 'UserController@show'),
+                new Route('user.show', '/users/{id}', 'UserController@show'),
                 false,
             ],
             'wildcard-route' => [
-                new Route('/files/*', 'FileController@show'),
+                new Route('file.show', '/files/*', 'FileController@show'),
                 false,
             ],
         ];

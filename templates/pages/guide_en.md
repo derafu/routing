@@ -215,7 +215,7 @@ class RegexParser implements ParserInterface
             }
 
             // Custom regex matching logic
-            if (preg_match($route->getPattern(), $uri, $matches)) {
+            if (preg_match($route->getPath(), $uri, $matches)) {
                 return new RouteMatch(
                     $route->getHandler(),
                     $matches
@@ -228,7 +228,7 @@ class RegexParser implements ParserInterface
     public function supports(RouteInterface $route): bool
     {
         // Define what routes this parser can handle
-        return str_starts_with($route->getPattern(), '#');
+        return str_starts_with($route->getPath(), '#');
     }
 }
 ```

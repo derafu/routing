@@ -23,25 +23,35 @@ final class Route implements RouteInterface
     /**
      * Creates a new Route instance.
      *
-     * @param string $pattern The URI pattern for this route.
+     * @param string $name The name of the route.
+     * @param string $path The URI path for this route.
      * @param string|array|Closure $handler The route handler.
-     * @param string|null $name Optional name for the route.
-     * @param array $parameters Optional additional parameters for the route.
+     * @param array $defaults Optional default values for the parameters of the route.
+     * @param array $methods Optional methods allowed for the route.
      */
     public function __construct(
-        private readonly string $pattern,
+        private readonly string $name,
+        private readonly string $path,
         private readonly string|array|Closure $handler,
-        private readonly ?string $name = null,
-        private readonly array $parameters = []
+        private readonly array $defaults = [],
+        private readonly array $methods = [],
     ) {
     }
 
     /**
      * {@inheritDoc}
      */
-    public function getPattern(): string
+    public function getName(): string
     {
-        return $this->pattern;
+        return $this->name;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getPath(): string
+    {
+        return $this->path;
     }
 
     /**
@@ -55,16 +65,16 @@ final class Route implements RouteInterface
     /**
      * {@inheritDoc}
      */
-    public function getName(): ?string
+    public function getDefaults(): array
     {
-        return $this->name;
+        return $this->defaults;
     }
 
     /**
      * {@inheritDoc}
      */
-    public function getParameters(): array
+    public function getMethods(): array
     {
-        return $this->parameters;
+        return $this->methods;
     }
 }

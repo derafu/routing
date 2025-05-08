@@ -14,6 +14,7 @@ namespace Derafu\Routing\Parser;
 
 use Derafu\Routing\Contract\ParserInterface;
 use Derafu\Routing\Contract\RouteInterface;
+use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
 use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 
@@ -68,10 +69,15 @@ final class FileSystemParser implements ParserInterface
                 $filepath = $directory . '/' . $path . $extension;
 
                 if (file_exists($filepath)) {
-                    return new RouteMatch(
-                        $filepath,
-                        ['uri' => $uri]
+
+                    $route = new Route(
+                        name: 'route_' . uniqid(),
+                        path: '/' . $path,
+                        handler: $filepath,
+                        defaults: ['uri' => $uri]
                     );
+
+                    return new RouteMatch($route, $route->getDefaults());
                 }
             }
         }

@@ -33,12 +33,12 @@ final class DynamicParserTest extends TestCase
 
     #[DataProvider('dynamicRoutesProvider')]
     public function testParseDynamicRoutes(
-        string $pattern,
+        string $path,
         string $uri,
         array $expectedParams,
         bool $shouldMatch
     ): void {
-        $route = new Route($pattern, 'TestController@action');
+        $route = new Route('test_route', $path, 'TestController@action');
         $match = $this->parser->parse($uri, [$route]);
 
         if ($shouldMatch) {

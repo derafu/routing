@@ -92,10 +92,10 @@ final class UrlGenerator implements UrlGeneratorInterface
      */
     private function generatePath(RouteInterface $route, array $parameters): string
     {
-        $pattern = $route->getPattern();
+        $pattern = $route->getPath();
 
         // Merge route-specific parameters with provided parameters.
-        $parameters = array_merge($route->getParameters(), $parameters);
+        $parameters = array_merge($route->getDefaults(), $parameters);
 
         // First pass: replace required parameters.
         $path = preg_replace_callback(

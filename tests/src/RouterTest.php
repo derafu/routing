@@ -46,12 +46,12 @@ final class RouterTest extends TestCase
 
     #[DataProvider('provideRoutes')]
     public function testAddAndMatchRoute(
-        string $pattern,
+        string $path,
         string|array|Closure $handler,
         string $matchUri,
         bool $shouldMatch
     ): void {
-        $this->router->addRoute($pattern, $handler);
+        $this->router->addRoute('test_route', $path, $handler);
 
         if ($shouldMatch) {
             $match = $this->router->match($matchUri);

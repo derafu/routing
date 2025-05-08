@@ -35,11 +35,10 @@ final class StaticParser implements ParserInterface
                 continue;
             }
 
-            if ($route->getPattern() === $uri) {
+            if ($route->getPath() === $uri) {
                 return new RouteMatch(
-                    $route->getHandler(),
-                    $route->getParameters(),
-                    $route->getName()
+                    $route,
+                    $route->getDefaults(),
                 );
             }
         }
@@ -52,7 +51,7 @@ final class StaticParser implements ParserInterface
      */
     public function supports(RouteInterface $route): bool
     {
-        $pattern = $route->getPattern();
+        $pattern = $route->getPath();
 
         // Static routes don't contain any special characters.
         return

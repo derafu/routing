@@ -23,17 +23,17 @@ final class RouteTest extends TestCase
 {
     #[DataProvider('routeDataProvider')]
     public function testRouteGetters(
-        string $pattern,
+        string $name,
+        string $path,
         string|array|Closure $handler,
-        ?string $name,
-        array $parameters
+        array $defaults
     ): void {
-        $route = new Route($pattern, $handler, $name, $parameters);
+        $route = new Route($name, $path, $handler, $defaults);
 
-        $this->assertSame($pattern, $route->getPattern());
-        $this->assertSame($handler, $route->getHandler());
         $this->assertSame($name, $route->getName());
-        $this->assertSame($parameters, $route->getParameters());
+        $this->assertSame($path, $route->getPath());
+        $this->assertSame($handler, $route->getHandler());
+        $this->assertSame($defaults, $route->getDefaults());
     }
 
     public static function routeDataProvider(): array
@@ -42,28 +42,22 @@ final class RouteTest extends TestCase
 
         return [
             'string-handler' => [
+                'test.route',
                 '/test',
                 'TestController@action',
-                'test.route',
-                ['param' => 'value'],
+                [], // Without defaults parameters.
             ],
             'array-handler' => [
+                'user.show',
                 '/users/{id}',
                 ['controller' => 'UserController', 'action' => 'show'],
-                'user.show',
-                ['id' => 1],
+                ['id' => 1], // With defaults parameters.
             ],
             'closure-handler' => [
+                'api.data',
                 '/api/data',
                 $closure,
-                'api.data',
-                [],
-            ],
-            'no-name-no-params' => [
-                '/simple',
-                'SimpleController@index',
-                null,
-                [],
+                [], // Without defaults parameters.
             ],
         ];
     }

@@ -35,14 +35,23 @@ interface RouterInterface
     /**
      * Adds a route to the router.
      *
-     * @param string $route The URI pattern for the route.
+     * @param string $name The name of the route.
+     * @param string $path The URI path for the route.
      * @param string|array|Closure $handler The route handler which can be:
      *   - `string`: A file path or Controller@action notation.
      *   - `array`: A configuration array with controller, action, and params.
      *   - `callable`: A callback function to handle the route.
+     * @param array $defaults Optional default values for the parameters of the route.
+     * @param array $methods Optional methods allowed for the route.
      * @return static Returns itself for method chaining.
      */
-    public function addRoute(string $route, string|array|Closure $handler): static;
+    public function addRoute(
+        string $name,
+        string $path,
+        string|array|Closure $handler,
+        array $defaults = [],
+        array $methods = []
+    ): static;
 
     /**
      * Matches a given URI against registered routes.
