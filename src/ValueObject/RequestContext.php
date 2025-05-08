@@ -223,12 +223,13 @@ final class RequestContext implements RequestContextInterface
         $scheme = $uri->getScheme() ?: 'http';
 
         // Determine host.
-        $host = $uri->getHost() ?: 'localhost';
+        $host = $uri->getHost() ?: $server['SERVER_NAME'] ?: 'localhost';
 
-        // Determine ports.
+        // Set default ports.
         $httpPort = 80;
         $httpsPort = 443;
 
+        // Adjust ports.
         $port = $uri->getPort();
         if ($port !== null) {
             if ('http' === $scheme) {
@@ -236,16 +237,22 @@ final class RequestContext implements RequestContextInterface
             } elseif ('https' === $scheme) {
                 $httpsPort = $port;
             }
+        } else {
+            if ('http' === $scheme) {
+                $httpPort = (int) $server['SERVER_PORT'];
+            } elseif ('https' === $scheme) {
+                $httpsPort = (int) $server['SERVER_PORT'];
+            }
         }
 
         // Determine base URL.
-        $baseUrl = '';
         $scriptName = $server['SCRIPT_NAME'] ?? '';
-        if ($scriptName !== '') {
+        $scriptFile = basename($server['SCRIPT_FILENAME'] ?? '');
+        if ($scriptName && str_ends_with($scriptName, $scriptFile)) {
             $baseUrl = dirname($scriptName);
-            if ($baseUrl === '\\' || $baseUrl === '/') {
-                $baseUrl = '';
-            }
+            $baseUrl = ($baseUrl === '/' || $baseUrl === '\\') ? '' : $baseUrl;
+        } else {
+            $baseUrl = '';
         }
 
         // Determine path info.
