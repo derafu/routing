@@ -218,7 +218,7 @@ $resultado = $dispatcher-&gt;dispatch($match);
             }
 
             // Lógica personalizada de coincidencia regex
-            if (preg_match($route-&gt;getPattern(), $uri, $matches)) {
+            if (preg_match($route-&gt;getPath(), $uri, $matches)) {
                 return new RouteMatch(
                     $route-&gt;getHandler(),
                     $matches
@@ -231,7 +231,7 @@ $resultado = $dispatcher-&gt;dispatch($match);
     public function supports(RouteInterface $route): bool
     {
         // Define qué rutas maneja este parser
-        return str_starts_with($route-&gt;getPattern(), '#');
+        return str_starts_with($route-&gt;getPath(), '#');
     }
 }
 </code></pre>
