@@ -210,58 +210,54 @@ final class RequestContext implements RequestContextInterface
     /**
      * Creates a new request context from a PSR-7 server request.
      *
-     * @param ServerRequestInterface $request A PSR-7 server request
-     *
-     * @return static A new request context instance
+     * @param ServerRequestInterface $request A PSR-7 server request.
+     * @param string|array $context The context attribute name or an array of
+     * context data.
+     * @return static A new request context instance.
      */
-    public static function fromRequest(ServerRequestInterface $request): static
-    {
+    public static function fromRequest(
+        ServerRequestInterface $request,
+        string|array $context = 'derafu.context'
+    ): static {
+        // Get data from context attribute and other sources of the request.
+        if (is_string($context)) {
+            $context = (array) $request->getAttribute($context, []);
+        }
         $server = $request->getServerParams();
         $uri = $request->getUri();
 
         // Determine scheme.
-        $scheme = $uri->getScheme() ?: 'http';
+        $scheme = ($context['URL_SCHEME'] ?? false) ?: $uri->getScheme() ?: 'http';
 
         // Determine host.
-        $host = $uri->getHost() ?: $server['SERVER_NAME'] ?: 'localhost';
+        $host = ($context['URL_HOST'] ?? false) ?: $uri->getHost() ?: $server['SERVER_NAME'] ?: 'localhost';
 
         // Set default ports.
         $httpPort = 80;
         $httpsPort = 443;
 
         // Adjust ports.
-        $port = $uri->getPort();
-        if ($port !== null) {
-            if ('http' === $scheme) {
-                $httpPort = $port;
-            } elseif ('https' === $scheme) {
-                $httpsPort = $port;
-            }
-        } else {
-            if ('http' === $scheme) {
-                $httpPort = (int) $server['SERVER_PORT'];
-            } elseif ('https' === $scheme) {
-                $httpsPort = (int) $server['SERVER_PORT'];
-            }
+        $port = (int) (($context['URL_PORT'] ?? false) ?: $uri->getPort() ?: $server['SERVER_PORT']);
+        if ('http' === $scheme) {
+            $httpPort = $port;
+        } elseif ('https' === $scheme) {
+            $httpsPort = $port;
         }
 
         // Determine base URL.
-        $scriptName = $server['SCRIPT_NAME'] ?? '';
-        $scriptFile = basename($server['SCRIPT_FILENAME'] ?? '');
-        if ($scriptName && str_ends_with($scriptName, $scriptFile)) {
-            $baseUrl = dirname($scriptName);
-            $baseUrl = ($baseUrl === '/' || $baseUrl === '\\') ? '' : $baseUrl;
-        } else {
-            $baseUrl = '';
-        }
+        $baseUrl = (string) ($context['APP_BASE_PATH'] ?? '');
 
         // Determine path info.
-        $requestPath = $uri->getPath();
-        $pathInfo = $requestPath;
-        if ($baseUrl !== '' && str_starts_with($requestPath, $baseUrl)) {
-            $pathInfo = substr($requestPath, strlen($baseUrl)) ?: '/';
+        if (!empty($context['URL_URI'])) {
+            $pathInfo = $context['URL_URI'];
+        } else {
+            $requestPath = $uri->getPath();
+            $pathInfo = $requestPath;
+            if ($baseUrl !== '' && str_starts_with($requestPath, $baseUrl)) {
+                $pathInfo = substr($requestPath, strlen($baseUrl)) ?: '/';
+            }
+            $pathInfo = '/' . ltrim($pathInfo, '/');
         }
-        $pathInfo = '/' . ltrim($pathInfo, '/');
 
         // Build the context.
         return new static(
