@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Derafu\Routing\Attribute;
 
 use Attribute;
+use Closure;
 
 /**
  * Attribute for defining a route.
@@ -25,6 +26,7 @@ class Route
         public ?string $name = null,
         public readonly array $methods = [],
         public readonly array $defaults = [],
+        public readonly string|array|Closure|null $handler = null,
     ) {
         if ($this->name === null) {
             $this->name = str_replace('/', '_', trim($path, '/'));
