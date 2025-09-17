@@ -18,7 +18,7 @@ use Closure;
 /**
  * Attribute for defining a route.
  */
-#[Attribute(Attribute::TARGET_METHOD)]
+#[Attribute(Attribute::IS_REPEATABLE | Attribute::TARGET_METHOD)]
 class Route
 {
     public function __construct(
