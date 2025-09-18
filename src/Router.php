@@ -81,6 +81,7 @@ final class Router implements RouterInterface
                         'handler' => $route['handler'] ?? null,
                         'defaults' => $route['defaults'] ?? [],
                         'methods' => $route['methods'] ?? [],
+                        'roles' => $route['roles'] ?? [],
                     ];
                 } elseif (is_string($route)) {
                     $hashInput = $index . '::' . $route;
@@ -90,6 +91,7 @@ final class Router implements RouterInterface
                         'handler' => $route,
                         'defaults' => [],
                         'methods' => [],
+                        'roles' => [],
                     ];
                 }
             }
@@ -104,6 +106,7 @@ final class Router implements RouterInterface
                     'handler' => $route['handler'] ?? null,
                     'defaults' => $route['defaults'] ?? [],
                     'methods' => $route['methods'] ?? [],
+                    'roles' => $route['roles'] ?? [],
                 ];
             }
 
@@ -139,6 +142,7 @@ final class Router implements RouterInterface
                 $route['handler'],
                 $route['defaults'],
                 $route['methods'],
+                $route['roles'],
             );
         }
     }
@@ -161,9 +165,17 @@ final class Router implements RouterInterface
         string $path,
         string|array|Closure $handler,
         array $defaults = [],
-        array $methods = []
+        array $methods = [],
+        array $roles = []
     ): static {
-        $this->routes->add(new Route($name, $path, $handler, $defaults, $methods));
+        $this->routes->add(new Route(
+            name: $name,
+            path: $path,
+            handler: $handler,
+            defaults: $defaults,
+            methods: $methods,
+            roles: $roles,
+        ));
 
         return $this;
     }

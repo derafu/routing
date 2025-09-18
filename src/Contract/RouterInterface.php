@@ -43,6 +43,7 @@ interface RouterInterface
      *   - `callable`: A callback function to handle the route.
      * @param array $defaults Optional default values for the parameters of the route.
      * @param array $methods Optional methods allowed for the route.
+     * @param array $roles Optional roles allowed for the route.
      * @return static Returns itself for method chaining.
      */
     public function addRoute(
@@ -50,7 +51,8 @@ interface RouterInterface
         string $path,
         string|array|Closure $handler,
         array $defaults = [],
-        array $methods = []
+        array $methods = [],
+        array $roles = []
     ): static;
 
     /**

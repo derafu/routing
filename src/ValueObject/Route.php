@@ -28,6 +28,7 @@ final class Route implements RouteInterface
      * @param string|array|Closure $handler The route handler.
      * @param array $defaults Optional default values for the parameters of the route.
      * @param array $methods Optional methods allowed for the route.
+     * @param array $roles Optional roles allowed for the route.
      */
     public function __construct(
         private readonly string $name,
@@ -35,6 +36,7 @@ final class Route implements RouteInterface
         private readonly string|array|Closure $handler,
         private readonly array $defaults = [],
         private readonly array $methods = [],
+        private readonly array $roles = [],
     ) {
     }
 
@@ -76,5 +78,29 @@ final class Route implements RouteInterface
     public function getMethods(): array
     {
         return $this->methods;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRoles(): array
+    {
+        return $this->roles;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function hasRole(string $role): bool
+    {
+        return in_array($role, $this->roles);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function isRoleAllowed(string $role): bool
+    {
+        return empty($this->roles) || $this->hasRole($role);
     }
 }

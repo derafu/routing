@@ -61,4 +61,27 @@ interface RouteInterface
      * @return array Returns an array of methods allowed for this route.
      */
     public function getMethods(): array;
+
+    /**
+     * Gets the roles allowed for this route.
+     *
+     * @return array Returns an array of roles allowed for this route.
+     */
+    public function getRoles(): array;
+
+    /**
+     * Checks if the route has a given role.
+     *
+     * @param string $role The role to check.
+     * @return bool Returns true if the route has the given role.
+     */
+    public function hasRole(string $role): bool;
+
+    /**
+     * Checks if the route allows a given role.
+     *
+     * @param string $role The role to check.
+     * @return bool Returns true if the route allows the given role.
+     */
+    public function isRoleAllowed(string $role): bool;
 }

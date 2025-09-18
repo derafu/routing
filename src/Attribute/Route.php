@@ -27,6 +27,7 @@ class Route
         public readonly array $methods = [],
         public readonly array $defaults = [],
         public readonly string|array|Closure|null $handler = null,
+        public readonly array $roles = [],
     ) {
         if ($this->name === null) {
             $this->name = str_replace('/', '_', trim($path, '/'));

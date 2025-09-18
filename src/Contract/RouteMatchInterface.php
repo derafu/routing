@@ -53,4 +53,27 @@ interface RouteMatchInterface
      * @return string|null Returns the module name or `null` if none exists.
      */
     public function getModule(): ?string;
+
+    /**
+     * Gets the roles associated with this match if any.
+     *
+     * @return array Returns an array of roles.
+     */
+    public function getRoles(): array;
+
+    /**
+     * Checks if the match has a given role.
+     *
+     * @param string $role The role to check.
+     * @return bool Returns true if the match has the given role.
+     */
+    public function hasRole(string $role): bool;
+
+    /**
+     * Checks if the match allows a given role.
+     *
+     * @param string $role The role to check.
+     * @return bool Returns true if the match allows the given role.
+     */
+    public function isRoleAllowed(string $role): bool;
 }

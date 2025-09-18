@@ -66,4 +66,28 @@ final class RouteMatch implements RouteMatchInterface
     {
         return $this->module;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRoles(): array
+    {
+        return $this->route->getRoles();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function hasRole(string $role): bool
+    {
+        return $this->route->hasRole($role);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function isRoleAllowed(string $role): bool
+    {
+        return $this->route->isRoleAllowed($role);
+    }
 }
