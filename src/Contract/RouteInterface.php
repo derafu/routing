@@ -83,5 +83,5 @@ interface RouteInterface
      * @param string $role The role to check.
      * @return bool Returns true if the route allows the given role.
      */
-    public function isRoleAllowed(string $role): bool;
+    public function isGranted(string $role): bool;
 }

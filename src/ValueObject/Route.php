@@ -99,7 +99,7 @@ final class Route implements RouteInterface
     /**
      * {@inheritDoc}
      */
-    public function isRoleAllowed(string $role): bool
+    public function isGranted(string $role): bool
     {
         return empty($this->roles) || $this->hasRole($role);
     }

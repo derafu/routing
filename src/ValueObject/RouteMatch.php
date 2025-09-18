@@ -86,8 +86,8 @@ final class RouteMatch implements RouteMatchInterface
     /**
      * {@inheritDoc}
      */
-    public function isRoleAllowed(string $role): bool
+    public function isGranted(string $role): bool
     {
-        return $this->route->isRoleAllowed($role);
+        return $this->route->isGranted($role);
     }
 }
