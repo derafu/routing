@@ -42,7 +42,8 @@ final class RouteMatchTest extends TestCase
 
     public static function matchDataProvider(): array
     {
-        $closure = function () {};
+        $closure = function () {
+        };
 
         return [
             'full-match' => [

@@ -64,7 +64,8 @@ final class RouterTest extends TestCase
 
     public static function provideRoutes(): array
     {
-        $handler = function () {};
+        $handler = function () {
+        };
 
         return [
             'empty' => [

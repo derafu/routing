@@ -38,7 +38,8 @@ final class RouteTest extends TestCase
 
     public static function routeDataProvider(): array
     {
-        $closure = function () {};
+        $closure = function () {
+        };
 
         return [
             'string-handler' => [
