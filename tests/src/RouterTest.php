@@ -165,4 +165,46 @@ final class RouterTest extends TestCase
             ],
         ];
     }
+
+    public function testMultipleRoutesRegisteredSimultaneously(): void
+    {
+        $router = new Router(parsers: [new StaticParser()]);
+
+        $router->addRoute('home', '/', 'HomeController::index');
+        $router->addRoute('users_list', '/users', 'UserController::index', [], ['GET']);
+        $router->addRoute('users_store', '/users', 'UserController::store', [], ['POST']);
+        $router->addRoute('about', '/about', 'PageController::about');
+
+        // Routes without method restriction accept any method.
+        $this->assertSame('HomeController::index', $router->match('/', 'GET')->getHandler());
+        $this->assertSame('HomeController::index', $router->match('/', 'POST')->getHandler());
+
+        // Same path /users, different methods dispatch to different handlers.
+        $getMatch = $router->match('/users', 'GET');
+        $this->assertSame('users_list', $getMatch->getName());
+        $this->assertSame('UserController::index', $getMatch->getHandler());
+
+        $postMatch = $router->match('/users', 'POST');
+        $this->assertSame('users_store', $postMatch->getName());
+        $this->assertSame('UserController::store', $postMatch->getHandler());
+
+        // A disallowed method on /users lists ALL allowed methods (GET and POST).
+        try {
+            $router->match('/users', 'DELETE');
+            $this->fail('Expected MethodNotAllowedException.');
+        } catch (MethodNotAllowedException $e) {
+            $this->assertSame('/users', $e->getUri());
+            $this->assertSame('DELETE', $e->getMethod());
+            $allowedMethods = $e->getAllowedMethods();
+            sort($allowedMethods);
+            $this->assertSame(['GET', 'POST'], $allowedMethods);
+        }
+
+        // Other registered routes are unaffected.
+        $this->assertSame('PageController::about', $router->match('/about', 'GET')->getHandler());
+
+        // Unknown path throws RouteNotFoundException regardless of method.
+        $this->expectException(RouteNotFoundException::class);
+        $router->match('/unknown', 'GET');
+    }
 }

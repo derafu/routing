@@ -14,6 +14,7 @@ namespace Derafu\Routing\Contract;
 
 use Closure;
 use Derafu\Routing\Enum\UrlReferenceType;
+use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
 
 /**
@@ -63,6 +64,8 @@ interface RouterInterface
      * current method).
      * @return RouteMatchInterface Returns a Match object if found.
      * @throws RouteNotFoundException When no route matches the given URI.
+     * @throws MethodNotAllowedException When the URI matches but the HTTP
+     * method is not allowed.
      */
     public function match(
         ?string $uri = null,

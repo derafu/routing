@@ -18,13 +18,21 @@ namespace Derafu\Routing\Exception;
 final class RouteNotFoundException extends RouterException
 {
     /**
+     * The HTTP status code for this exception.
+     */
+    public const CODE = 404;
+
+    /**
      * Creates a new RouteNotFoundException instance.
      *
      * @param string $uri The URI that could not be matched.
      */
     public function __construct(private readonly string $uri)
     {
-        parent::__construct(['No route found for "{uri}".', 'uri' => $uri]);
+        parent::__construct(
+            ['No route found for "{uri}".', 'uri' => $uri],
+            self::CODE
+        );
     }
 
     /**

@@ -24,31 +24,18 @@ use Derafu\Routing\Exception\RouteNotFoundException;
 final class Collection implements CollectionInterface
 {
     /**
-     * The registered routes.
+     * The registered routes, indexed by route name.
      *
      * @var array<string,RouteInterface>
      */
     private array $routes = [];
 
     /**
-     * The registered routes indexed by name for quick lookup.
-     *
-     * @var array<string,RouteInterface>
-     */
-    private array $routesByName = [];
-
-    /**
      * {@inheritDoc}
      */
     public function add(RouteInterface $route): static
     {
-        $this->routes[$route->getPath()] = $route;
-
-        // Index the route by name if it has one.
-        $name = $route->getName();
-        if ($name !== null) {
-            $this->routesByName[$name] = $route;
-        }
+        $this->routes[$route->getName()] = $route;
 
         return $this;
     }
@@ -58,7 +45,13 @@ final class Collection implements CollectionInterface
      */
     public function get(string $uri): ?RouteInterface
     {
-        return $this->routes[$uri] ?? null;
+        foreach ($this->routes as $route) {
+            if ($route->getPath() === $uri) {
+                return $route;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -66,7 +59,7 @@ final class Collection implements CollectionInterface
      */
     public function has(string $uri): bool
     {
-        return isset($this->routes[$uri]);
+        return $this->get($uri) !== null;
     }
 
     /**
@@ -82,11 +75,11 @@ final class Collection implements CollectionInterface
      */
     public function getByName(string $name): RouteInterface
     {
-        if (!isset($this->routesByName[$name])) {
+        if (!isset($this->routes[$name])) {
             throw new RouteNotFoundException($name);
         }
 
-        return $this->routesByName[$name];
+        return $this->routes[$name];
     }
 
     /**
@@ -94,6 +87,6 @@ final class Collection implements CollectionInterface
      */
     public function hasByName(string $name): bool
     {
-        return isset($this->routesByName[$name]);
+        return isset($this->routes[$name]);
     }
 }

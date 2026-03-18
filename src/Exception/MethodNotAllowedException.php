@@ -18,6 +18,11 @@ namespace Derafu\Routing\Exception;
 final class MethodNotAllowedException extends RouterException
 {
     /**
+     * The HTTP status code for this exception.
+     */
+    public const CODE = 405;
+
+    /**
      * Creates a new MethodNotAllowedException instance.
      *
      * @param string $uri The URI that was matched.
@@ -29,12 +34,15 @@ final class MethodNotAllowedException extends RouterException
         private readonly string $method,
         private readonly array $allowedMethods,
     ) {
-        parent::__construct([
-            'Method "{method}" is not allowed for "{uri}". Allowed methods: {allowed}.',
-            'method' => $method,
-            'uri' => $uri,
-            'allowed' => implode(', ', $allowedMethods),
-        ]);
+        parent::__construct(
+            [
+                'Method "{method}" is not allowed for "{uri}". Allowed methods: {allowed}.',
+                'method' => $method,
+                'uri' => $uri,
+                'allowed' => implode(', ', $allowedMethods),
+            ],
+            self::CODE
+        );
     }
 
     /**

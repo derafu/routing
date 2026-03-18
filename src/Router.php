@@ -188,20 +188,39 @@ final class Router implements RouterInterface
         ?string $uri = null,
         ?string $method = null
     ): RouteMatchInterface {
-        // Try each parser until one returns a match.
         $uri = $uri ?? $this->normalizeUri($this->getCurrentUri());
+        $method = strtoupper($method ?? $this->getCurrentMethod());
+
+        // Collect allowed methods from URI-matching routes that reject the method,
+        // so we can report all of them in MethodNotAllowedException.
+        $allowedMethods = [];
+
         foreach ($this->parsers as $parser) {
-            $match = $parser->parse($uri, $this->routes->all());
-            if ($match !== null) {
-                // Validate the method.
-                $method = strtoupper($method ?? $this->getCurrentMethod());
+            $remainingRoutes = $this->routes->all();
+
+            while (!empty($remainingRoutes)) {
+                $match = $parser->parse($uri, $remainingRoutes);
+
+                if ($match === null) {
+                    break;
+                }
+
                 if ($match->isMethodAllowed($method)) {
                     return $match;
                 }
 
-                // Match found by URI, but method is not allowed.
-                throw new MethodNotAllowedException($uri, $method, $match->getMethods());
+                // URI matched but method not allowed: collect and skip this route.
+                $allowedMethods = array_merge($allowedMethods, $match->getMethods());
+                $matchedName = $match->getName();
+                $remainingRoutes = array_values(array_filter(
+                    $remainingRoutes,
+                    fn ($r) => $r->getName() !== $matchedName
+                ));
             }
+        }
+
+        if (!empty($allowedMethods)) {
+            throw new MethodNotAllowedException($uri, $method, array_unique($allowedMethods));
         }
 
         throw new RouteNotFoundException($uri);
