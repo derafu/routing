@@ -46,6 +46,14 @@ final class RouteMatch implements RouteMatchInterface
     /**
      * {@inheritDoc}
      */
+    public function getPath(): string
+    {
+        return $this->route->getPath();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
     public function getHandler(): string|array|Closure
     {
         return $this->route->getHandler();
@@ -54,17 +62,29 @@ final class RouteMatch implements RouteMatchInterface
     /**
      * {@inheritDoc}
      */
-    public function getParameters(): array
+    public function getDefaults(): array
     {
-        return $this->parameters;
+        return $this->route->getDefaults();
     }
 
     /**
      * {@inheritDoc}
      */
-    public function getModule(): ?string
+    public function getMethods(): array
     {
-        return $this->module;
+        return $this->route->getMethods();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function isMethodAllowed(string $method): bool
+    {
+        if (empty($this->route->getMethods())) {
+            return true;
+        }
+
+        return in_array(strtoupper($method), $this->route->getMethods());
     }
 
     /**
@@ -89,5 +109,21 @@ final class RouteMatch implements RouteMatchInterface
     public function isGranted(string $role): bool
     {
         return $this->route->isGranted($role);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getParameters(): array
+    {
+        return $this->parameters;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getModule(): ?string
+    {
+        return $this->module;
     }
 }

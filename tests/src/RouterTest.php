@@ -14,6 +14,7 @@ namespace Derafu\TestsRouting;
 
 use Closure;
 use Derafu\Routing\Collection;
+use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Parser\StaticParser;
 use Derafu\Routing\Router;
@@ -30,6 +31,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Route::class)]
 #[CoversClass(RouteMatch::class)]
 #[CoversClass(RouteNotFoundException::class)]
+#[CoversClass(MethodNotAllowedException::class)]
 #[CoversClass(UrlGenerator::class)]
 final class RouterTest extends TestCase
 {
@@ -103,6 +105,63 @@ final class RouterTest extends TestCase
                 ['controller' => 'UserController', 'action' => 'index'],
                 '/users',
                 true,
+            ],
+        ];
+    }
+
+    #[DataProvider('provideRoutesWithMethod')]
+    public function testMatchWithMethod(
+        string $path,
+        string|array|Closure $handler,
+        array $routeMethods,
+        string $matchUri,
+        string $matchMethod,
+        bool $shouldMatch,
+        ?string $expectedException = null
+    ): void {
+        $this->router->addRoute('test_route', $path, $handler, [], $routeMethods);
+
+        if ($shouldMatch) {
+            $match = $this->router->match($matchUri, $matchMethod);
+            $this->assertSame($handler, $match->getHandler());
+        } else {
+            $this->expectException($expectedException);
+            $this->router->match($matchUri, $matchMethod);
+        }
+    }
+
+    public static function provideRoutesWithMethod(): array
+    {
+        return [
+            'no-methods-get-request' => [
+                '/test', 'Handler::action', [], '/test', 'GET', true,
+            ],
+            'no-methods-post-request' => [
+                '/test', 'Handler::action', [], '/test', 'POST', true,
+            ],
+            'get-route-get-request' => [
+                '/test', 'Handler::action', ['GET'], '/test', 'GET', true,
+            ],
+            'get-route-post-request' => [
+                '/test', 'Handler::action', ['GET'], '/test', 'POST', false, MethodNotAllowedException::class,
+            ],
+            'post-route-post-request' => [
+                '/test', 'Handler::action', ['POST'], '/test', 'POST', true,
+            ],
+            'post-route-get-request' => [
+                '/test', 'Handler::action', ['POST'], '/test', 'GET', false, MethodNotAllowedException::class,
+            ],
+            'multi-methods-allowed' => [
+                '/test', 'Handler::action', ['GET', 'POST'], '/test', 'POST', true,
+            ],
+            'multi-methods-not-allowed' => [
+                '/test', 'Handler::action', ['GET', 'POST'], '/test', 'PUT', false, MethodNotAllowedException::class,
+            ],
+            'wrong-uri-with-method' => [
+                '/test', 'Handler::action', ['GET'], '/wrong', 'GET', false, RouteNotFoundException::class,
+            ],
+            'lowercase-method-normalized' => [
+                '/test', 'Handler::action', ['GET'], '/test', 'get', true,
             ],
         ];
     }

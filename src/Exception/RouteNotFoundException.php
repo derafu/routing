@@ -22,8 +22,18 @@ final class RouteNotFoundException extends RouterException
      *
      * @param string $uri The URI that could not be matched.
      */
-    public function __construct(string $uri)
+    public function __construct(private readonly string $uri)
     {
         parent::__construct(['No route found for "{uri}".', 'uri' => $uri]);
+    }
+
+    /**
+     * Returns the URI that could not be matched.
+     *
+     * @return string
+     */
+    public function getUri(): string
+    {
+        return $this->uri;
     }
 }

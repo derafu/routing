@@ -56,13 +56,18 @@ interface RouterInterface
     ): static;
 
     /**
-     * Matches a given URI against registered routes.
+     * Matches a given URI and method against registered routes.
      *
      * @param string|null $uri The URI to match (null means use current URI).
+     * @param string|null $method The HTTP method to match (null means use
+     * current method).
      * @return RouteMatchInterface Returns a Match object if found.
      * @throws RouteNotFoundException When no route matches the given URI.
      */
-    public function match(?string $uri = null): RouteMatchInterface;
+    public function match(
+        ?string $uri = null,
+        ?string $method = null
+    ): RouteMatchInterface;
 
     /**
      * Generates a URL or path for a specific route based on the given

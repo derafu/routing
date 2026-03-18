@@ -35,9 +35,12 @@ final class Route implements RouteInterface
         private readonly string $path,
         private readonly string|array|Closure $handler,
         private readonly array $defaults = [],
-        private readonly array $methods = [],
+        private array $methods = [],
         private readonly array $roles = [],
     ) {
+        if (!empty($this->methods)) {
+            $this->methods = array_map('strtoupper', $this->methods);
+        }
     }
 
     /**

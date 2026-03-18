@@ -31,6 +31,13 @@ interface RouteMatchInterface
     public function getName(): string;
 
     /**
+     * Gets the path of the matched route.
+     *
+     * @return string Returns the route path.
+     */
+    public function getPath(): string;
+
+    /**
      * Gets the handler that should process this match.
      *
      * @return string|array|Closure Returns the matched route handler.
@@ -38,21 +45,26 @@ interface RouteMatchInterface
     public function getHandler(): string|array|Closure;
 
     /**
-     * Gets the parameters extracted from the URI and route configuration.
+     * Gets the default values for the parameters of the matched route.
      *
-     * This includes both parameters extracted from the URI pattern and any
-     * default parameters defined in the route configuration.
-     *
-     * @return array Returns an array of parameters.
+     * @return array Returns an array of default values.
      */
-    public function getParameters(): array;
+    public function getDefaults(): array;
 
     /**
-     * Gets the module associated with this match if one exists.
+     * Gets the methods allowed for the matched route.
      *
-     * @return string|null Returns the module name or `null` if none exists.
+     * @return array Returns an array of methods.
      */
-    public function getModule(): ?string;
+    public function getMethods(): array;
+
+    /**
+     * Checks if the matched route allows a given method.
+     *
+     * @param string $method The method to check.
+     * @return bool Returns true if the matched route allows the given method.
+     */
+    public function isMethodAllowed(string $method): bool;
 
     /**
      * Gets the roles associated with this match if any.
@@ -76,4 +88,21 @@ interface RouteMatchInterface
      * @return bool Returns true if the match allows the given role.
      */
     public function isGranted(string $role): bool;
+
+    /**
+     * Gets the parameters extracted from the URI and route configuration.
+     *
+     * This includes both parameters extracted from the URI pattern and any
+     * default parameters defined in the route configuration.
+     *
+     * @return array Returns an array of parameters.
+     */
+    public function getParameters(): array;
+
+    /**
+     * Gets the module associated with this match if one exists.
+     *
+     * @return string|null Returns the module name or `null` if none exists.
+     */
+    public function getModule(): ?string;
 }

@@ -20,6 +20,7 @@ use Derafu\Routing\Contract\RouteMatchInterface;
 use Derafu\Routing\Contract\RouterInterface;
 use Derafu\Routing\Contract\UrlGeneratorInterface;
 use Derafu\Routing\Enum\UrlReferenceType;
+use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\ValueObject\Route;
 use InvalidArgumentException;
@@ -183,15 +184,23 @@ final class Router implements RouterInterface
     /**
      * {@inheritDoc}
      */
-    public function match(?string $uri = null): RouteMatchInterface
-    {
-        $uri = $uri ?? $this->normalizeUri($this->getCurrentUri());
-
+    public function match(
+        ?string $uri = null,
+        ?string $method = null
+    ): RouteMatchInterface {
         // Try each parser until one returns a match.
+        $uri = $uri ?? $this->normalizeUri($this->getCurrentUri());
         foreach ($this->parsers as $parser) {
             $match = $parser->parse($uri, $this->routes->all());
             if ($match !== null) {
-                return $match;
+                // Validate the method.
+                $method = strtoupper($method ?? $this->getCurrentMethod());
+                if ($match->isMethodAllowed($method)) {
+                    return $match;
+                }
+
+                // Match found by URI, but method is not allowed.
+                throw new MethodNotAllowedException($uri, $method, $match->getMethods());
             }
         }
 
@@ -254,5 +263,15 @@ final class Router implements RouterInterface
         }
 
         return $uri;
+    }
+
+    /**
+     * Gets the current HTTP method from the server variables.
+     *
+     * @return string The current HTTP method.
+     */
+    private function getCurrentMethod(): string
+    {
+        return $_SERVER['REQUEST_METHOD'] ?? 'GET';
     }
 }
