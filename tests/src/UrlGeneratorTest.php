@@ -19,9 +19,11 @@ use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Exception\UrlGeneratorException;
 use Derafu\Routing\UrlGenerator;
 use Derafu\Routing\ValueObject\Route;
+use Derafu\Translation\Contract\TranslatableInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
 #[CoversClass(UrlGenerator::class)]
 #[CoversClass(Collection::class)]
@@ -124,8 +126,18 @@ final class UrlGeneratorTest extends TestCase
 
     public function testGenerateWithMissingParameters(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->generator->generate('user.show');
+        $exception = null;
+        try {
+            $this->generator->generate('user.show');
+        } catch (Throwable $e) {
+            $exception = $e;
+        }
+
+        $this->assertInstanceOf(InvalidArgumentException::class, $exception);
+        $this->assertInstanceOf(TranslatableInterface::class, $exception);
+        $this->assertStringStartsWith('Parameter "', $exception->getMessage());
+        $this->assertStringContainsString('" is required for route "', $exception->getMessage());
+        $this->assertStringEndsWith('" but was not provided.', $exception->getMessage());
     }
 
     public function testGenerateWithInvalidRouteName(): void

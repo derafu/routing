@@ -21,6 +21,8 @@ use Derafu\Routing\Router;
 use Derafu\Routing\UrlGenerator;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
+use Derafu\Translation\Contract\TranslatableInterface;
+use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -44,6 +46,34 @@ final class RouterTest extends TestCase
                 new StaticParser(),
             ]
         );
+    }
+
+    /**
+     * @return array<string, array{array<int|string, mixed>, string}>
+     */
+    public static function invalidRouteConfigurationProvider(): array
+    {
+        return [
+            'not an array' => [[5], 'Invalid route configuration.'],
+            'without name' => [[['path' => '/', 'handler' => 'home']], 'Name is required in route "0".'],
+            'without path' => [[['name' => 'home', 'handler' => 'home']], 'Path is required in route "home".'],
+            'without handler' => [[['name' => 'home', 'path' => '/']], 'Handler is required in route "home".'],
+        ];
+    }
+
+    /**
+     * @param array<int|string, mixed> $routes
+     */
+    #[DataProvider('invalidRouteConfigurationProvider')]
+    public function testAnInvalidRouteConfigurationIsATranslatableError(array $routes, string $message): void
+    {
+        try {
+            new Router(parsers: [new StaticParser()], routes: $routes);
+            $this->fail('The configuration was accepted.');
+        } catch (InvalidArgumentException $e) {
+            $this->assertInstanceOf(TranslatableInterface::class, $e);
+            $this->assertSame($message, $e->getMessage());
+        }
     }
 
     public function testHasTellsWhetherARouteNameIsDefined(): void

@@ -23,7 +23,7 @@ use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\ValueObject\Route;
-use InvalidArgumentException;
+use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 
 /**
  * Main router implementation that coordinates route parsing and matching.
@@ -118,22 +118,22 @@ final class Router implements RouterInterface
 
             // Validate the route configuration.
             if (!isset($route['name'])) {
-                throw new InvalidArgumentException(sprintf(
-                    'Name is required in route "%s".',
-                    $index,
-                ));
+                throw new InvalidArgumentException([
+                    'Name is required in route "{route}".',
+                    'route' => $index,
+                ]);
             }
             if (!isset($route['path'])) {
-                throw new InvalidArgumentException(sprintf(
-                    'Path is required in route "%s".',
-                    $route['name'],
-                ));
+                throw new InvalidArgumentException([
+                    'Path is required in route "{route}".',
+                    'route' => $route['name'],
+                ]);
             }
             if (!isset($route['handler'])) {
-                throw new InvalidArgumentException(sprintf(
-                    'Handler is required in route "%s".',
-                    $route['name'],
-                ));
+                throw new InvalidArgumentException([
+                    'Handler is required in route "{route}".',
+                    'route' => $route['name'],
+                ]);
             }
 
             // Add the route to the router.

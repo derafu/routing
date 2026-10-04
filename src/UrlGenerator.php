@@ -19,7 +19,7 @@ use Derafu\Routing\Contract\UrlGeneratorInterface;
 use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Exception\UrlGeneratorException;
-use InvalidArgumentException;
+use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 
 /**
  * Generates URLs for named routes.
@@ -104,11 +104,11 @@ final class UrlGenerator implements UrlGeneratorInterface
                 $name = $matches[1];
 
                 if (!isset($parameters[$name])) {
-                    throw new InvalidArgumentException(sprintf(
-                        'Parameter "%s" is required for route "%s" but was not provided.',
-                        $name,
-                        $pattern
-                    ));
+                    throw new InvalidArgumentException([
+                        'Parameter "{parameter}" is required for route "{route}" but was not provided.',
+                        'parameter' => $name,
+                        'route' => $pattern,
+                    ]);
                 }
 
                 return (string)$parameters[$name];
