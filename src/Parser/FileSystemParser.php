@@ -63,12 +63,18 @@ final class FileSystemParser implements ParserInterface
         // Remove leading slash for filesystem paths.
         $path = ltrim($uri, '/');
 
+        // A URI is never allowed to climb directories, even when the result
+        // would still land inside a registered directory.
+        if ($this->isUnsafePath($path)) {
+            return null;
+        }
+
         foreach ($this->directories as $directory) {
             // Look for files with supported extensions.
             foreach ($this->extensions as $extension) {
                 $filepath = $directory . '/' . $path . $extension;
 
-                if (file_exists($filepath)) {
+                if (file_exists($filepath) && $this->isInsideDirectory($filepath, $directory)) {
 
                     $route = new Route(
                         name: 'route_' . uniqid(),
@@ -94,6 +100,33 @@ final class FileSystemParser implements ParserInterface
 
         // Only support string handlers that end with supported extensions.
         return is_string($handler) && $this->hasValidExtension($handler);
+    }
+
+    /**
+     * Checks if a path contains a `..` segment or a null byte.
+     */
+    private function isUnsafePath(string $path): bool
+    {
+        if (str_contains($path, "\0")) {
+            return true;
+        }
+
+        $segments = explode('/', str_replace('\\', '/', $path));
+
+        return in_array('..', $segments, true);
+    }
+
+    /**
+     * Checks that a file, once symlinks are resolved, lives inside a
+     * directory (already resolved with `realpath()` when registered).
+     */
+    private function isInsideDirectory(string $filepath, string $directory): bool
+    {
+        $realPath = realpath($filepath);
+
+        return $realPath !== false
+            && str_starts_with($realPath, $directory . DIRECTORY_SEPARATOR)
+        ;
     }
 
     /**

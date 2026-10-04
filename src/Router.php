@@ -100,7 +100,7 @@ final class Router implements RouterInterface
             // If the $index is a numeric index and the $route is an array, it
             // is a route configuration. This also has retrocompatibility with
             // previous router implementation.
-            elseif (is_numeric($index) && is_array($route)) {
+            elseif (is_array($route)) {
                 $route = [
                     'name' => $route['name'] ?? null,
                     'path' => $route['path'] ?? $route['route'] ?? null,
@@ -224,6 +224,14 @@ final class Router implements RouterInterface
         }
 
         throw new RouteNotFoundException($uri);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function has(string $name): bool
+    {
+        return $this->routes->hasByName($name);
     }
 
     /**

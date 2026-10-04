@@ -46,6 +46,27 @@ final class RouterTest extends TestCase
         );
     }
 
+    public function testHasTellsWhetherARouteNameIsDefined(): void
+    {
+        $router = new Router(
+            parsers: [new StaticParser()],
+            routes: ['home' => ['path' => '/', 'handler' => 'home.html.twig']]
+        );
+        $router->addRoute('about', '/about', 'about.html.twig');
+
+        $this->assertTrue($router->has('home'));
+        $this->assertTrue($router->has('about'));
+        $this->assertFalse($router->has('missing'));
+    }
+
+    public function testHasChecksTheNameAndNotThePath(): void
+    {
+        $this->router->addRoute('about', '/about', 'about.html.twig');
+
+        $this->assertFalse($this->router->has('/about'));
+        $this->assertFalse($this->router->has('About'));
+    }
+
     #[DataProvider('provideRoutes')]
     public function testAddAndMatchRoute(
         string $path,

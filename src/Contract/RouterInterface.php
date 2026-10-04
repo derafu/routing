@@ -73,6 +73,18 @@ interface RouterInterface
     ): RouteMatchInterface;
 
     /**
+     * Checks whether a route with that name is defined.
+     *
+     * Only the routes that have a name can be told apart: the ones found by a
+     * parser that does not register them (like the pages of the file system
+     * parser) are not known by name, even if `match()` finds them.
+     *
+     * @param string $name The name of the route.
+     * @return bool
+     */
+    public function has(string $name): bool;
+
+    /**
      * Generates a URL or path for a specific route based on the given
      * parameters.
      *

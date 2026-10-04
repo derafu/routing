@@ -91,7 +91,7 @@ final class UrlGeneratorTest extends TestCase
 
     public function testGenerateWithContext(): void
     {
-        $context = $this->createMock(RequestContextInterface::class);
+        $context = $this->createStub(RequestContextInterface::class);
         $context->method('getBaseUrl')->willReturn('/base');
         $context->method('getScheme')->willReturn('https');
         $context->method('getHost')->willReturn('example.com');
@@ -109,7 +109,7 @@ final class UrlGeneratorTest extends TestCase
         $this->assertSame('//example.com/base/', $url);
 
         // Prueba con puerto no estándar
-        $context = $this->createMock(RequestContextInterface::class);
+        $context = $this->createStub(RequestContextInterface::class);
         $context->method('getBaseUrl')->willReturn('/base');
         $context->method('getScheme')->willReturn('https');
         $context->method('getHost')->willReturn('example.com');
@@ -136,7 +136,7 @@ final class UrlGeneratorTest extends TestCase
 
     public function testRelativePathNotImplemented(): void
     {
-        $context = $this->createMock(RequestContextInterface::class);
+        $context = $this->createStub(RequestContextInterface::class);
         $this->generator->setContext($context);
 
         $this->expectException(UrlGeneratorException::class);
@@ -173,7 +173,7 @@ final class UrlGeneratorTest extends TestCase
     {
         $this->assertNull($this->generator->getContext());
 
-        $context = $this->createMock(RequestContextInterface::class);
+        $context = $this->createStub(RequestContextInterface::class);
         $this->generator->setContext($context);
         $this->assertSame($context, $this->generator->getContext());
     }

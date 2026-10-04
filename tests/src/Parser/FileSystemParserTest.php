@@ -38,11 +38,29 @@ final class FileSystemParserTest extends TestCase
 
     protected function tearDown(): void
     {
+        foreach (glob($this->tempDir . '/*') ?: [] as $entry) {
+            if (is_link($entry)) {
+                unlink($entry);
+            }
+        }
         array_map('unlink', glob($this->tempDir . '/*.*'));
         array_map('unlink', glob($this->tempDir . '/blog/*.*'));
         rmdir($this->tempDir . '/blog');
         rmdir($this->tempDir);
+
+        foreach ($this->outsideFiles as $file) {
+            if (file_exists($file)) {
+                unlink($file);
+            }
+        }
     }
+
+    /**
+     * Files created outside of the registered directory by the tests.
+     *
+     * @var array<string>
+     */
+    private array $outsideFiles = [];
 
     #[DataProvider('fileRoutesProvider')]
     public function testParseFileRoutes(string $filename, string $uri, bool $shouldMatch): void
@@ -84,5 +102,65 @@ final class FileSystemParserTest extends TestCase
                 false,
             ],
         ];
+    }
+
+    /**
+     * A `..` segment must never be accepted, no matter where it points.
+     */
+    #[DataProvider('traversalUrisProvider')]
+    public function testParseRejectsPathTraversal(string $uri): void
+    {
+        // Files that would be reached if `..` were honored: one outside of
+        // the registered directory and one inside of it.
+        $outside = dirname($this->tempDir) . '/secret-' . basename($this->tempDir) . '.md';
+        file_put_contents($outside, 'secret');
+        $this->outsideFiles[] = $outside;
+        file_put_contents($this->tempDir . '/blog/post.md', 'test content');
+
+        $uri = str_replace('{outside}', basename($outside, '.md'), $uri);
+
+        $this->assertNull($this->parser->parse($uri, []));
+    }
+
+    public static function traversalUrisProvider(): array
+    {
+        return [
+            'parent-directory' => ['/../{outside}'],
+            'nested-parent-directory' => ['/blog/../../{outside}'],
+            'no-leading-slash' => ['../{outside}'],
+            'multiple-leading-slashes' => ['//../{outside}'],
+            'resolves-inside-but-still-rejected' => ['/blog/../blog/post'],
+            'only-dots-segment' => ['/..'],
+            'trailing-dots-segment' => ['/blog/..'],
+            'null-byte' => ["/blog/post\0.txt"],
+        ];
+    }
+
+    public function testParseRejectsSymlinkPointingOutsideDirectory(): void
+    {
+        $outsideDir = sys_get_temp_dir() . '/router-outside-' . uniqid();
+        mkdir($outsideDir);
+        file_put_contents($outsideDir . '/secret.md', 'secret');
+        $this->outsideFiles[] = $outsideDir . '/secret.md';
+        symlink($outsideDir, $this->tempDir . '/link');
+
+        try {
+            $this->assertNull($this->parser->parse('/link/secret', []));
+        } finally {
+            @unlink($outsideDir . '/secret.md');
+            @rmdir($outsideDir);
+        }
+    }
+
+    /**
+     * Names that merely contain dots are legitimate and must keep working.
+     */
+    public function testParseAllowsDotsInsideNames(): void
+    {
+        file_put_contents($this->tempDir . '/v1..2.md', 'test content');
+        file_put_contents($this->tempDir . '/blog/a.b.md', 'test content');
+
+        $this->assertNotNull($this->parser->parse('/v1..2', []));
+        $this->assertNotNull($this->parser->parse('/blog/a.b', []));
     }
 }
