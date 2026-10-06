@@ -89,6 +89,34 @@ final class RouterTest extends TestCase
         $this->assertFalse($router->has('missing'));
     }
 
+    public function testTheRolesOfARouteComeFromItsConfiguration(): void
+    {
+        $router = new Router(
+            parsers: [new StaticParser()],
+            routes: [
+                'named' => ['path' => '/named', 'handler' => 'a.html.twig', 'roles' => ['admin']],
+                ['name' => 'listed', 'path' => '/listed', 'handler' => 'b.html.twig', 'roles' => ['editor', 'owner']],
+                'without' => ['path' => '/without', 'handler' => 'c.html.twig'],
+                '/by-path' => 'd.html.twig',
+            ]
+        );
+
+        $this->assertSame(['admin'], $router->match('/named')->getRoles());
+        $this->assertSame(['editor', 'owner'], $router->match('/listed')->getRoles());
+        $this->assertSame([], $router->match('/without')->getRoles());
+        $this->assertSame([], $router->match('/by-path')->getRoles());
+    }
+
+    public function testTheRolesOfARouteAddedWithAddRoute(): void
+    {
+        $this->router->addRoute('panel', '/panel', 'panel.html.twig', roles: ['admin']);
+        $this->router->addRoute('open', '/open', 'open.html.twig');
+
+        $this->assertTrue($this->router->match('/panel')->hasAnyRole(['admin']));
+        $this->assertFalse($this->router->match('/panel')->hasAnyRole(['guest']));
+        $this->assertSame([], $this->router->match('/open')->getRoles());
+    }
+
     public function testHasChecksTheNameAndNotThePath(): void
     {
         $this->router->addRoute('about', '/about', 'about.html.twig');

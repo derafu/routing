@@ -102,8 +102,8 @@ final class Route implements RouteInterface
     /**
      * {@inheritDoc}
      */
-    public function isGranted(string $role): bool
+    public function hasAnyRole(array $roles): bool
     {
-        return empty($this->roles) || $this->hasRole($role);
+        return array_intersect($roles, $this->roles) !== [];
     }
 }

@@ -36,6 +36,39 @@ final class RouteTest extends TestCase
         $this->assertSame($defaults, $route->getDefaults());
     }
 
+    public function testARouteWithoutRolesHasNone(): void
+    {
+        $route = new Route('home', '/', 'HomeController@index');
+
+        $this->assertSame([], $route->getRoles());
+        $this->assertFalse($route->hasRole('admin'));
+        $this->assertFalse($route->hasAnyRole(['admin', 'editor']));
+    }
+
+    public function testARouteTellsWhichRolesItDeclares(): void
+    {
+        $route = new Route('admin', '/admin', 'AdminController@index', [], [], ['admin', 'editor']);
+
+        $this->assertSame(['admin', 'editor'], $route->getRoles());
+        $this->assertTrue($route->hasRole('editor'));
+        $this->assertFalse($route->hasRole('guest'));
+    }
+
+    public function testHasAnyRoleIsTrueWhenOneOfTheRolesIsDeclared(): void
+    {
+        $route = new Route('admin', '/admin', 'AdminController@index', [], [], ['admin', 'editor']);
+
+        $this->assertTrue($route->hasAnyRole(['guest', 'editor']));
+        $this->assertFalse($route->hasAnyRole(['guest', 'owner']));
+    }
+
+    public function testHasAnyRoleOfNoRolesIsFalse(): void
+    {
+        $route = new Route('admin', '/admin', 'AdminController@index', [], [], ['admin']);
+
+        $this->assertFalse($route->hasAnyRole([]));
+    }
+
     public static function routeDataProvider(): array
     {
         $closure = function () {

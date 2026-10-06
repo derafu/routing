@@ -40,6 +40,19 @@ final class RouteMatchTest extends TestCase
         $this->assertSame($module, $match->getModule());
     }
 
+    public function testTheMatchGivesTheRolesOfItsRoute(): void
+    {
+        $route = new Route('admin', '/admin', 'AdminController@index', [], [], ['admin', 'editor']);
+        $match = new RouteMatch($route);
+
+        $this->assertSame(['admin', 'editor'], $match->getRoles());
+        $this->assertTrue($match->hasRole('admin'));
+        $this->assertFalse($match->hasRole('guest'));
+        $this->assertTrue($match->hasAnyRole(['guest', 'editor']));
+        $this->assertFalse($match->hasAnyRole(['guest']));
+        $this->assertFalse($match->hasAnyRole([]));
+    }
+
     public static function matchDataProvider(): array
     {
         $closure = function () {

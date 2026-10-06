@@ -78,10 +78,14 @@ interface RouteInterface
     public function hasRole(string $role): bool;
 
     /**
-     * Checks if the route allows a given role.
+     * Checks if the route has at least one of the given roles.
      *
-     * @param string $role The role to check.
-     * @return bool Returns true if the route allows the given role.
+     * It only tells what the route declares. What it means for a route to have
+     * no roles, or for a user to have none of them, is decided by whoever
+     * calls it (for example the authorization).
+     *
+     * @param array<string> $roles The roles to check.
+     * @return bool Returns true if the route has at least one of the roles.
      */
-    public function isGranted(string $role): bool;
+    public function hasAnyRole(array $roles): bool;
 }

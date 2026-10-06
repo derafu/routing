@@ -82,12 +82,12 @@ interface RouteMatchInterface
     public function hasRole(string $role): bool;
 
     /**
-     * Checks if the match allows a given role.
+     * Checks if the match has at least one of the given roles.
      *
-     * @param string $role The role to check.
-     * @return bool Returns true if the match allows the given role.
+     * @param array<string> $roles The roles to check.
+     * @return bool Returns true if the match has at least one of the roles.
      */
-    public function isGranted(string $role): bool;
+    public function hasAnyRole(array $roles): bool;
 
     /**
      * Gets the parameters extracted from the URI and route configuration.
