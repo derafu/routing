@@ -14,8 +14,10 @@ namespace Derafu\TestsRouting;
 
 use Closure;
 use Derafu\Routing\Collection;
+use Derafu\Routing\Exception\InvalidPathException;
 use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
+use Derafu\Routing\Parser\DynamicParser;
 use Derafu\Routing\Parser\StaticParser;
 use Derafu\Routing\Router;
 use Derafu\Routing\UrlGenerator;
@@ -33,6 +35,8 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Route::class)]
 #[CoversClass(RouteMatch::class)]
 #[CoversClass(RouteNotFoundException::class)]
+#[CoversClass(InvalidPathException::class)]
+#[CoversClass(DynamicParser::class)]
 #[CoversClass(MethodNotAllowedException::class)]
 #[CoversClass(UrlGenerator::class)]
 final class RouterTest extends TestCase
@@ -149,11 +153,11 @@ final class RouterTest extends TestCase
         };
 
         return [
-            'empty' => [
+            'empty is the root' => [
                 '/',
                 'TestController@action',
                 '',
-                false,
+                true,
             ],
             'root' => [
                 '/',
@@ -285,5 +289,113 @@ final class RouterTest extends TestCase
         // Unknown path throws RouteNotFoundException regardless of method.
         $this->expectException(RouteNotFoundException::class);
         $router->match('/unknown', 'GET');
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function provideWaysOfWritingThePathOfARoute(): array
+    {
+        return [
+            'as it is' => ['/api/index'],
+            'a double slash at the start' => ['//api/index'],
+            'a double slash in the middle' => ['/api//index'],
+            'many slashes' => ['///api////index//'],
+            'a dot segment' => ['/api/./index'],
+            'a slash at the end' => ['/api/index/'],
+            'no slash at the start' => ['api/index'],
+            'an escaped letter' => ['/api/%69ndex'],
+            'an escaped letter of the first segment' => ['/%61pi/index'],
+            'an escaped dot segment' => ['/api/%2E/index'],
+        ];
+    }
+
+    #[DataProvider('provideWaysOfWritingThePathOfARoute')]
+    public function testEveryWayOfWritingAPathMatchesTheRouteOfThePath(string $path): void
+    {
+        $this->router->addRoute('index', '/api/index', 'IndexController@action');
+
+        $this->assertSame('index', $this->router->match($path)->getName());
+    }
+
+    #[DataProvider('provideWaysOfWritingThePathOfARoute')]
+    public function testADynamicRouteSeesTheCanonicalPath(string $path): void
+    {
+        // The route that takes everything below /api: it must get "index", not
+        // "/index" or "%69ndex", or whoever reads the parameter would have to
+        // guess what the router did not decide.
+        $router = new Router(parsers: [new StaticParser(), new DynamicParser()]);
+        $router->addRoute('api', '/api/{resource:.+}', 'ApiController@dispatch');
+
+        $this->assertSame(['resource' => 'index'], $router->match($path)->getParameters());
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function providePathsWithoutASafeForm(): array
+    {
+        return [
+            'a parent segment' => ['/api/../index'],
+            'a parent segment at the start' => ['/../api/index'],
+            'an escaped parent segment' => ['/api/%2e%2e/index'],
+            'an escaped slash' => ['/api%2Findex'],
+            'an escaped backslash' => ['/api%5Cindex'],
+            'a backslash' => ['/api\\index'],
+            'a null byte' => ["/api/index\0"],
+            'an escaped null byte' => ['/api/index%00'],
+            'a control character' => ["/api/\x01index"],
+            'an escape that is not valid' => ['/api/%zzindex'],
+            'a percent at the end' => ['/api/index%'],
+        ];
+    }
+
+    #[DataProvider('providePathsWithoutASafeForm')]
+    public function testAPathWithoutASafeFormIsNotMatched(string $path): void
+    {
+        $this->router->addRoute('index', '/api/index', 'IndexController@action');
+        $router = new Router(parsers: [new StaticParser(), new DynamicParser()]);
+        $router->addRoute('api', '/api/{resource:.+}', 'ApiController@dispatch');
+
+        foreach ([$this->router, $router] as $candidate) {
+            try {
+                $candidate->match($path);
+                $this->fail('The path was matched.');
+            } catch (InvalidPathException $e) {
+                $this->assertSame(400, $e->getCode());
+                $this->assertSame(InvalidPathException::CODE, $e->getCode());
+                $this->assertSame($path, $e->getUri());
+            }
+        }
+    }
+
+    public function testThePathThatIsNotValidIsNotInTheMessage(): void
+    {
+        // It is what a client sent: it does not belong in a response or a log.
+        $exception = new InvalidPathException("/api/\x01<script>");
+
+        $this->assertInstanceOf(TranslatableInterface::class, $exception);
+        $this->assertSame('The path of the request is not valid.', $exception->getMessage());
+        $this->assertStringNotContainsString('script', $exception->getMessage());
+    }
+
+    public function testWithoutAPathTheOfTheCurrentRequestIsUsedInItsCanonicalForm(): void
+    {
+        $backup = $_SERVER;
+        $_SERVER['REQUEST_URI'] = '//api//index/';
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+
+        try {
+            $this->router->addRoute('index', '/api/index', 'IndexController@action');
+
+            $this->assertSame('index', $this->router->match()->getName());
+
+            $_SERVER['REQUEST_URI'] = '/api/../index';
+            $this->expectException(InvalidPathException::class);
+            $this->router->match();
+        } finally {
+            $_SERVER = $backup;
+        }
     }
 }

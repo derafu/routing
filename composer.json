@@ -26,6 +26,7 @@
     },
     "require": {
         "php": "^8.5",
+        "derafu/support": "dev-main",
         "derafu/translation": "dev-main",
         "psr/http-message": "^2.0"
     },

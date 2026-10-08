@@ -14,6 +14,7 @@ namespace Derafu\Routing\Contract;
 
 use Closure;
 use Derafu\Routing\Enum\UrlReferenceType;
+use Derafu\Routing\Exception\InvalidPathException;
 use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
 
@@ -59,10 +60,18 @@ interface RouterInterface
     /**
      * Matches a given URI and method against registered routes.
      *
+     * The URI is matched in its canonical form (see `Url::normalizePath()` of
+     * `derafu/support`): `/api//index`, `/api/./index` and `/api/%69ndex` are the
+     * same as `/api/index`, and the parsers and the match never see the other
+     * forms. A URI that has no safe form is not matched.
+     *
      * @param string|null $uri The URI to match (null means use current URI).
      * @param string|null $method The HTTP method to match (null means use
      * current method).
      * @return RouteMatchInterface Returns a Match object if found.
+     * @throws InvalidPathException When the URI has no safe canonical form (it
+     * climbs a directory, it has an escaped separator, a control character or an
+     * escape that is not valid).
      * @throws RouteNotFoundException When no route matches the given URI.
      * @throws MethodNotAllowedException When the URI matches but the HTTP
      * method is not allowed.

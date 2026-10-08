@@ -20,9 +20,11 @@ use Derafu\Routing\Contract\RouteMatchInterface;
 use Derafu\Routing\Contract\RouterInterface;
 use Derafu\Routing\Contract\UrlGeneratorInterface;
 use Derafu\Routing\Enum\UrlReferenceType;
+use Derafu\Routing\Exception\InvalidPathException;
 use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\ValueObject\Route;
+use Derafu\Support\Url;
 use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 
 /**
@@ -188,7 +190,13 @@ final class Router implements RouterInterface
         ?string $uri = null,
         ?string $method = null
     ): RouteMatchInterface {
-        $uri = $uri ?? $this->normalizeUri($this->getCurrentUri());
+        // The route is matched against the canonical form of the path, that is
+        // the same for every way of writing it (`/api//index`, `/api/./index`
+        // and `/api/%69ndex` are `/api/index`): the parsers, and whoever reads
+        // the match, never see the other forms. A path that has no safe form
+        // (`..`, an escaped separator, a control character) is not matched.
+        $path = $uri ?? $this->getCurrentUri();
+        $uri = Url::normalizePath($path) ?? throw new InvalidPathException($path);
         $method = strtoupper($method ?? $this->getCurrentMethod());
 
         // Collect allowed methods from URI-matching routes that reject the method,
@@ -261,17 +269,6 @@ final class Router implements RouterInterface
     public function getContext(): ?RequestContextInterface
     {
         return $this->urlGenerator->getContext();
-    }
-
-    /**
-     * Normalizes a URI by trimming slashes and ensuring it starts with one.
-     *
-     * @param string $uri The URI to normalize.
-     * @return string The normalized URI.
-     */
-    private function normalizeUri(string $uri): string
-    {
-        return '/' . trim($uri, '/');
     }
 
     /**

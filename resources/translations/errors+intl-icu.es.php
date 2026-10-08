@@ -30,6 +30,8 @@ return [
         'El path es obligatorio en la ruta "{route}".',
     'Handler is required in route "{route}".' =>
         'El manejador (handler) es obligatorio en la ruta "{route}".',
+    'The path of the request is not valid.' =>
+        'La ruta de la solicitud no es válida.',
     'No route found for "{uri}".' =>
         'No se encontró ninguna ruta para "{uri}".',
     'Method "{method}" is not allowed for "{uri}". Allowed methods: {allowed}.' =>
