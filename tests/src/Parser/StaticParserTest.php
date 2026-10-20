@@ -54,6 +54,9 @@ final class StaticParserTest extends TestCase
         $this->assertNull($this->parser->parse('/non-existent', $routes));
     }
 
+    /**
+     * @return array<string, array{Route, bool}>
+     */
     public static function supportedRoutesProvider(): array
     {
         return [

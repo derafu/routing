@@ -43,8 +43,8 @@ final class FileSystemParser implements ParserInterface
     /**
      * Creates a new FileSystemParser instance.
      *
-     * @param array $directories List of directories to search in.
-     * @param array $extensions List of valid extensions in filenames.
+     * @param list<string> $directories List of directories to search in.
+     * @param list<string> $extensions List of valid extensions in filenames.
      */
     public function __construct(array $directories, array $extensions)
     {

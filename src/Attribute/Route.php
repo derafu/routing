@@ -21,6 +21,12 @@ use Closure;
 #[Attribute(Attribute::IS_REPEATABLE | Attribute::TARGET_METHOD)]
 class Route
 {
+    /**
+     * @param list<string> $methods
+     * @param array<string, mixed> $defaults
+     * @param string|array<array-key, mixed>|Closure|null $handler
+     * @param list<string> $roles
+     */
     public function __construct(
         public readonly string $path,
         public ?string $name = null,

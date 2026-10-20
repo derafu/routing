@@ -17,6 +17,8 @@ use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\InvalidPathException;
 use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
+use Derafu\Routing\Exception\UrlGeneratorException;
+use InvalidArgumentException;
 
 /**
  * Main router interface that defines the contract for the routing system.
@@ -39,13 +41,13 @@ interface RouterInterface
      *
      * @param string $name The name of the route.
      * @param string $path The URI path for the route.
-     * @param string|array|Closure $handler The route handler which can be:
+     * @param string|array<array-key, mixed>|Closure $handler The route handler which can be:
      *   - `string`: A file path or Controller@action notation.
      *   - `array`: A configuration array with controller, action, and params.
      *   - `callable`: A callback function to handle the route.
-     * @param array $defaults Optional default values for the parameters of the route.
-     * @param array $methods Optional methods allowed for the route.
-     * @param array $roles Optional roles allowed for the route.
+     * @param array<string, mixed> $defaults Optional default values for the parameters of the route.
+     * @param list<string> $methods Optional methods allowed for the route.
+     * @param list<string> $roles Optional roles allowed for the route.
      * @return static Returns itself for method chaining.
      */
     public function addRoute(
@@ -98,11 +100,14 @@ interface RouterInterface
      * parameters.
      *
      * @param string $name The name of the route.
-     * @param array $parameters An array of parameters.
+     * @param array<string, mixed> $parameters An array of parameters.
      * @param UrlReferenceType $referenceType The type of reference to be
      * generated.
      * @return string The generated URL.
-     * @throws RouteNotFoundException If the named route doesn't exist.
+     * @throws UrlGeneratorException If the named route doesn't exist or the URL
+     * cannot be generated.
+     * @throws InvalidArgumentException If a parameter that the route needs is
+     * missing, or its value cannot be converted to a string.
      */
     public function generate(
         string $name,

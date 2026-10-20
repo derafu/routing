@@ -15,6 +15,7 @@ namespace Derafu\Routing\Parser;
 use Derafu\Routing\Contract\ParserInterface;
 use Derafu\Routing\Contract\RouteInterface;
 use Derafu\Routing\Contract\RouteMatchInterface;
+use Derafu\Routing\Exception\RouterException;
 use Derafu\Routing\ValueObject\RouteMatch;
 
 /**
@@ -79,7 +80,11 @@ final class DynamicParser implements ParserInterface
             $routePattern,
             -1,
             PREG_SPLIT_DELIM_CAPTURE
-        );
+        ) ?: throw new RouterException([
+            'The pattern of the route "{route}" could not be processed: {error}',
+            'route' => $routePattern,
+            'error' => preg_last_error_msg(),
+        ]);
 
         $pattern = '';
         foreach ($segments as $segment) {
@@ -131,8 +136,8 @@ final class DynamicParser implements ParserInterface
     /**
      * Extracts named parameters from regex matches.
      *
-     * @param array $matches Matches from preg_match.
-     * @return array Extracted parameters.
+     * @param array<int|string, string> $matches Matches from preg_match.
+     * @return array<string, string> Extracted parameters.
      */
     private function extractParameters(array $matches): array
     {

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Derafu\Routing\ValueObject;
 
 use Derafu\Routing\Contract\RequestContextInterface;
+use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 
 /**
@@ -210,10 +211,22 @@ final class RequestContext implements RequestContextInterface
     /**
      * Creates a new request context from a PSR-7 server request.
      *
+     * The data of the context (see below) wins over the data of the request:
+     *
+     *   - `URL_SCHEME`: The scheme (`http` or `https`).
+     *   - `URL_HOST`: The host name.
+     *   - `URL_PORT`: The port, for the scheme of the request.
+     *   - `APP_BASE_PATH`: The base path of the application.
+     *   - `URL_URI`: The path of the request.
+     *
+     * Without a port in the context or in the URI of the request, the ports are
+     * the default ones of each scheme (80 and 443).
+     *
      * @param ServerRequestInterface $request A PSR-7 server request.
-     * @param string|array $context The context attribute name or an array of
-     * context data.
+     * @param string|array<string, mixed> $context The context attribute name or
+     * an array of context data.
      * @return static A new request context instance.
+     * @throws InvalidArgumentException If the context is not valid.
      */
     public static function fromRequest(
         ServerRequestInterface $request,
@@ -221,36 +234,47 @@ final class RequestContext implements RequestContextInterface
     ): static {
         // Get data from context attribute and other sources of the request.
         if (is_string($context)) {
-            $context = (array) $request->getAttribute($context, []);
+            $attribute = $request->getAttribute($context, []);
+            if (!is_array($attribute)) {
+                throw new InvalidArgumentException([
+                    'The context attribute {attribute} must be an array; {type} given.',
+                    'attribute' => $context,
+                    'type' => get_debug_type($attribute),
+                ]);
+            }
+            $context = $attribute;
         }
         $server = $request->getServerParams();
         $uri = $request->getUri();
 
         // Determine scheme.
-        $scheme = ($context['URL_SCHEME'] ?? false) ?: $uri->getScheme() ?: 'http';
+        $scheme = self::contextString($context, 'URL_SCHEME') ?? ($uri->getScheme() ?: 'http');
 
         // Determine host.
-        $host = ($context['URL_HOST'] ?? false) ?: $uri->getHost() ?: $server['SERVER_NAME'] ?: 'localhost';
+        $serverName = $server['SERVER_NAME'] ?? null;
+        $host = self::contextString($context, 'URL_HOST')
+            ?? ($uri->getHost() ?: (is_string($serverName) && $serverName !== '' ? $serverName : 'localhost'));
 
         // Set default ports.
         $httpPort = 80;
         $httpsPort = 443;
 
         // Adjust ports.
-        $port = (int) (($context['URL_PORT'] ?? false) ?: $uri->getPort() ?: $server['SERVER_PORT']);
-        if ('http' === $scheme) {
-            $httpPort = $port;
-        } elseif ('https' === $scheme) {
-            $httpsPort = $port;
+        $port = self::contextPort($context) ?? $uri->getPort();
+        if ($port !== null) {
+            if ('http' === $scheme) {
+                $httpPort = $port;
+            } elseif ('https' === $scheme) {
+                $httpsPort = $port;
+            }
         }
 
         // Determine base URL.
-        $baseUrl = (string) ($context['APP_BASE_PATH'] ?? '');
+        $baseUrl = self::contextString($context, 'APP_BASE_PATH') ?? '';
 
         // Determine path info.
-        if (!empty($context['URL_URI'])) {
-            $pathInfo = $context['URL_URI'];
-        } else {
+        $pathInfo = self::contextString($context, 'URL_URI');
+        if ($pathInfo === null) {
             $requestPath = $uri->getPath();
             $pathInfo = $requestPath;
             if ($baseUrl !== '' && str_starts_with($requestPath, $baseUrl)) {
@@ -270,5 +294,60 @@ final class RequestContext implements RequestContextInterface
             $pathInfo,
             $uri->getQuery()
         );
+    }
+
+    /**
+     * Gets a string of the context data, if it is there and it is not empty.
+     *
+     * @param array<array-key, mixed> $context The context data.
+     * @param string $key The key of the value.
+     * @return string|null The value, or `null` if there is none.
+     * @throws InvalidArgumentException If the value is not a string.
+     */
+    private static function contextString(array $context, string $key): ?string
+    {
+        $value = $context[$key] ?? null;
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (!is_string($value)) {
+            throw new InvalidArgumentException([
+                'The key {key} of the request context must be a string; {type} given.',
+                'key' => $key,
+                'type' => get_debug_type($value),
+            ]);
+        }
+
+        return $value;
+    }
+
+    /**
+     * Gets the port of the context data, if it is there.
+     *
+     * @param array<array-key, mixed> $context The context data.
+     * @return int|null The port, or `null` if there is none.
+     * @throws InvalidArgumentException If the value is not a valid port.
+     */
+    private static function contextPort(array $context): ?int
+    {
+        $value = $context['URL_PORT'] ?? null;
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $port = match (true) {
+            is_int($value) => $value,
+            is_string($value) && ctype_digit($value) => (int) $value,
+            default => 0,
+        };
+        if ($port < 1 || $port > 65535) {
+            throw new InvalidArgumentException([
+                'The key URL_PORT of the request context must be a port number from 1 to 65535; {type} given.',
+                'type' => get_debug_type($value),
+            ]);
+        }
+
+        return $port;
     }
 }

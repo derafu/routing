@@ -13,7 +13,8 @@ declare(strict_types=1);
 namespace Derafu\Routing\Contract;
 
 use Derafu\Routing\Enum\UrlReferenceType;
-use Derafu\Routing\Exception\RouteNotFoundException;
+use Derafu\Routing\Exception\UrlGeneratorException;
+use InvalidArgumentException;
 
 /**
  * Interface for the URL generator.
@@ -27,13 +28,16 @@ interface UrlGeneratorInterface
      * parameters.
      *
      * @param string $name The name of the route.
-     * @param array $parameters An array of parameters.
+     * @param array<string, mixed> $parameters An array of parameters.
      * @param UrlReferenceType $referenceType The type of reference to be
      * generated.
      *
      * @return string The generated URL.
      *
-     * @throws RouteNotFoundException If the named route doesn't exist.
+     * @throws UrlGeneratorException If the named route doesn't exist or the URL
+     * cannot be generated.
+     * @throws InvalidArgumentException If a parameter that the route needs is
+     * missing, or its value cannot be converted to a string.
      */
     public function generate(
         string $name,

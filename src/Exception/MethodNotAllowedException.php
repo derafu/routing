@@ -27,7 +27,7 @@ final class MethodNotAllowedException extends RouterException
      *
      * @param string $uri The URI that was matched.
      * @param string $method The HTTP method that was used.
-     * @param array $allowedMethods The HTTP methods allowed for the route.
+     * @param array<int, string> $allowedMethods The HTTP methods allowed for the route.
      */
     public function __construct(
         private readonly string $uri,
@@ -68,7 +68,7 @@ final class MethodNotAllowedException extends RouterException
     /**
      * Returns the HTTP methods allowed for the route.
      *
-     * @return array
+     * @return array<int, string>
      */
     public function getAllowedMethods(): array
     {

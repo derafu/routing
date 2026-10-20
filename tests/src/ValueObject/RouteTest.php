@@ -21,6 +21,10 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Route::class)]
 final class RouteTest extends TestCase
 {
+    /**
+     * @param string|array<array-key, mixed>|Closure $handler
+     * @param array<string, mixed> $defaults
+     */
     #[DataProvider('routeDataProvider')]
     public function testRouteGetters(
         string $name,
@@ -69,6 +73,9 @@ final class RouteTest extends TestCase
         $this->assertFalse($route->hasAnyRole([]));
     }
 
+    /**
+     * @return array<string, array{string, string, string|array<array-key, mixed>|Closure, array<string, mixed>}>
+     */
     public static function routeDataProvider(): array
     {
         $closure = function () {

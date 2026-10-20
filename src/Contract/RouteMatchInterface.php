@@ -40,21 +40,21 @@ interface RouteMatchInterface
     /**
      * Gets the handler that should process this match.
      *
-     * @return string|array|Closure Returns the matched route handler.
+     * @return string|array<array-key, mixed>|Closure Returns the matched route handler.
      */
     public function getHandler(): string|array|Closure;
 
     /**
      * Gets the default values for the parameters of the matched route.
      *
-     * @return array Returns an array of default values.
+     * @return array<string, mixed> Returns an array of default values.
      */
     public function getDefaults(): array;
 
     /**
      * Gets the methods allowed for the matched route.
      *
-     * @return array Returns an array of methods.
+     * @return list<string> Returns an array of methods.
      */
     public function getMethods(): array;
 
@@ -69,7 +69,7 @@ interface RouteMatchInterface
     /**
      * Gets the roles associated with this match if any.
      *
-     * @return array Returns an array of roles.
+     * @return list<string> Returns an array of roles.
      */
     public function getRoles(): array;
 
@@ -95,7 +95,7 @@ interface RouteMatchInterface
      * This includes both parameters extracted from the URI pattern and any
      * default parameters defined in the route configuration.
      *
-     * @return array Returns an array of parameters.
+     * @return array<string, mixed> Returns an array of parameters.
      */
     public function getParameters(): array;
 

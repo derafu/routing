@@ -15,6 +15,7 @@ namespace Derafu\TestsRouting\Parser;
 use Derafu\Routing\Parser\FileSystemParser;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
+use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -43,8 +44,8 @@ final class FileSystemParserTest extends TestCase
                 unlink($entry);
             }
         }
-        array_map('unlink', glob($this->tempDir . '/*.*'));
-        array_map('unlink', glob($this->tempDir . '/blog/*.*'));
+        array_map('unlink', glob($this->tempDir . '/*.*') ?: []);
+        array_map('unlink', glob($this->tempDir . '/blog/*.*') ?: []);
         rmdir($this->tempDir . '/blog');
         rmdir($this->tempDir);
 
@@ -62,6 +63,9 @@ final class FileSystemParserTest extends TestCase
      */
     private array $outsideFiles = [];
 
+    /**
+     * @param non-empty-string $filename
+     */
     #[DataProvider('fileRoutesProvider')]
     public function testParseFileRoutes(string $filename, string $uri, bool $shouldMatch): void
     {
@@ -72,12 +76,17 @@ final class FileSystemParserTest extends TestCase
 
         if ($shouldMatch) {
             $this->assertNotNull($match);
-            $this->assertStringEndsWith($filename, $match->getHandler());
+            $handler = $match->getHandler();
+            $this->assertIsString($handler);
+            $this->assertStringEndsWith($filename, $handler);
         } else {
             $this->assertNull($match);
         }
     }
 
+    /**
+     * @return array<string, array{non-empty-string, string, bool}>
+     */
     public static function fileRoutesProvider(): array
     {
         return [
@@ -122,6 +131,9 @@ final class FileSystemParserTest extends TestCase
         $this->assertNull($this->parser->parse($uri, []));
     }
 
+    /**
+     * @return array<string, array{string}>
+     */
     public static function traversalUrisProvider(): array
     {
         return [
@@ -162,5 +174,54 @@ final class FileSystemParserTest extends TestCase
 
         $this->assertNotNull($this->parser->parse('/v1..2', []));
         $this->assertNotNull($this->parser->parse('/blog/a.b', []));
+    }
+
+    public function testItSupportsTheRoutesWhoseHandlerIsAFileWithAValidExtension(): void
+    {
+        $this->assertTrue($this->parser->supports(new Route('a', '/a', '/pages/a.md')));
+        $this->assertTrue($this->parser->supports(new Route('b', '/b', '/pages/b.html.twig')));
+        $this->assertFalse($this->parser->supports(new Route('c', '/c', '/pages/c.txt')));
+        $this->assertFalse($this->parser->supports(new Route('d', '/d', ['file' => 'd.md'])));
+        $this->assertFalse($this->parser->supports(new Route('e', '/e', fn () => 'e.md')));
+    }
+
+    public function testADirectoryThatDoesNotExistIsReported(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid directory: /does/not/exist');
+
+        new FileSystemParser(['/does/not/exist'], ['.md']);
+    }
+
+    public function testAFileIsNotADirectory(): void
+    {
+        $file = $this->tempDir . '/file.md';
+        file_put_contents($file, 'content');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid directory: ' . $file);
+
+        new FileSystemParser([$file], ['.md']);
+    }
+
+    public function testTheLastDirectoryIsLookedUpFirst(): void
+    {
+        $other = sys_get_temp_dir() . '/router-test-other-' . uniqid();
+        mkdir($other);
+        file_put_contents($this->tempDir . '/page.md', 'first');
+        file_put_contents($other . '/page.md', 'second');
+
+        try {
+            $parser = new FileSystemParser([$this->tempDir, $other, $this->tempDir], ['.md']);
+            $match = $parser->parse('/page', []);
+
+            $this->assertNotNull($match);
+            $handler = $match->getHandler();
+            $this->assertIsString($handler);
+            $this->assertSame(realpath($other) . '/page.md', $handler);
+        } finally {
+            unlink($other . '/page.md');
+            rmdir($other);
+        }
     }
 }

@@ -44,28 +44,28 @@ interface RouteInterface
      * The handler can be a file path, a controller@action string, a callback
      * function, or a configuration array.
      *
-     * @return string|array|Closure Returns the route handler.
+     * @return string|array<array-key, mixed>|Closure Returns the route handler.
      */
     public function getHandler(): string|array|Closure;
 
     /**
      * Gets the default values for the parameters of this route.
      *
-     * @return array Returns an array of default values.
+     * @return array<string, mixed> Returns an array of default values.
      */
     public function getDefaults(): array;
 
     /**
      * Gets the methods allowed for this route.
      *
-     * @return array Returns an array of methods allowed for this route.
+     * @return list<string> Returns an array of methods allowed for this route.
      */
     public function getMethods(): array;
 
     /**
      * Gets the roles allowed for this route.
      *
-     * @return array Returns an array of roles allowed for this route.
+     * @return list<string> Returns an array of roles allowed for this route.
      */
     public function getRoles(): array;
 

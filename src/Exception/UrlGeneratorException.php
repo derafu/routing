@@ -18,6 +18,22 @@ namespace Derafu\Routing\Exception;
 final class UrlGeneratorException extends RouterException
 {
     /**
+     * Creates a UrlGeneratorException for a path that cannot be processed.
+     *
+     * @param string $pattern The path of the route.
+     * @param string $error The error of the regular expression.
+     * @return static
+     */
+    public static function forPatternFailure(string $pattern, string $error): static
+    {
+        return new static([
+            'Unable to generate a URL for the route "{pattern}": {error}',
+            'pattern' => $pattern,
+            'error' => $error,
+        ]);
+    }
+
+    /**
      * Creates a UrlGeneratorException for a route that does not exist.
      *
      * @param string $name The name of the route.

@@ -56,6 +56,9 @@ final class CollectionTest extends TestCase
         $this->assertSame($routes, $this->collection->all());
     }
 
+    /**
+     * @return array<string, array{Route}>
+     */
     public static function routeProvider(): array
     {
         return [

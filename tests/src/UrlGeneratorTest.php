@@ -18,13 +18,17 @@ use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Exception\UrlGeneratorException;
 use Derafu\Routing\UrlGenerator;
+use Derafu\Routing\ValueObject\RequestContext;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Translation\Contract\TranslatableInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 use Throwable;
 
+#[CoversClass(RequestContext::class)]
 #[CoversClass(UrlGenerator::class)]
 #[CoversClass(Collection::class)]
 #[CoversClass(Route::class)]
@@ -188,5 +192,111 @@ final class UrlGeneratorTest extends TestCase
         $context = $this->createStub(RequestContextInterface::class);
         $this->generator->setContext($context);
         $this->assertSame($context, $this->generator->getContext());
+    }
+
+    #[RunInSeparateProcess]
+    public function testAPathThatTheRegularExpressionCanNotProcessIsReported(): void
+    {
+        // Makes the regular expressions fail when they have to backtrack, with
+        // an error of PCRE (`preg_*` functions return `null`). It is in a
+        // process of its own because PHP keeps the regular expressions that
+        // were already compiled, and the ones that were compiled with JIT do
+        // not have this limit.
+        $limits = [ini_set('pcre.jit', '0'), ini_set('pcre.backtrack_limit', '1')];
+        try {
+            $this->generator->generate('post.show', ['slug' => 'hello']);
+            $this->fail('A path that can not be processed must be reported.');
+        } catch (UrlGeneratorException $exception) {
+            $this->assertInstanceOf(TranslatableInterface::class, $exception);
+            $this->assertStringStartsWith('Unable to generate a URL for the route "/posts/{slug}": ', $exception->getMessage());
+        } finally {
+            ini_set('pcre.jit', (string) $limits[0]);
+            ini_set('pcre.backtrack_limit', (string) $limits[1]);
+        }
+    }
+
+    public function testAParameterThatCanBeConvertedToAStringIsAccepted(): void
+    {
+        $slug = new class () {
+            public function __toString(): string
+            {
+                return 'from-an-object';
+            }
+        };
+
+        $this->assertSame('/posts/from-an-object', $this->generator->generate('post.show', ['slug' => $slug]));
+        $this->assertSame('/posts/1.5', $this->generator->generate('post.show', ['slug' => 1.5]));
+    }
+
+    /**
+     * @return array<string, array{string, array<string, mixed>, string}>
+     */
+    public static function parametersThatCanNotBeConvertedProvider(): array
+    {
+        $message = 'Parameter "%s" of route "%s" must be a string, a number, a boolean or an object that can be converted to a string; %s given.';
+
+        return [
+            'an array' => ['post.show', ['slug' => ['a']], sprintf($message, 'slug', '/posts/{slug}', 'array')],
+            'an object' => ['post.show', ['slug' => new \stdClass()], sprintf($message, 'slug', '/posts/{slug}', 'stdClass')],
+            'an optional array' => ['blog.archive', ['year' => 2026, 'month' => [1]], sprintf($message, 'month', '/blog/{year}/{month?}', 'array')],
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $parameters
+     */
+    #[DataProvider('parametersThatCanNotBeConvertedProvider')]
+    public function testAParameterThatCanNotBeConvertedToAStringIsReported(string $route, array $parameters, string $message): void
+    {
+        try {
+            $this->generator->generate($route, $parameters);
+            $this->fail('A parameter that can not be converted must be reported.');
+        } catch (InvalidArgumentException $exception) {
+            $this->assertInstanceOf(TranslatableInterface::class, $exception);
+            $this->assertSame($message, $exception->getMessage());
+        }
+    }
+
+    public function testARelativePathIsNotImplementedYet(): void
+    {
+        $generator = new UrlGenerator($this->collection, new RequestContext());
+
+        try {
+            $generator->generate('home', [], UrlReferenceType::RELATIVE_PATH);
+            $this->fail('A relative path is not implemented yet.');
+        } catch (UrlGeneratorException $exception) {
+            $this->assertInstanceOf(TranslatableInterface::class, $exception);
+            $this->assertSame('Relative path generation is not implemented yet.', $exception->getMessage());
+        }
+    }
+
+    /**
+     * @return array<string, array{string, int, int, UrlReferenceType, string}>
+     */
+    public static function portsOfTheUrlProvider(): array
+    {
+        return [
+            'http with its default port' => ['http', 80, 443, UrlReferenceType::ABSOLUTE_URL, 'http://example.com/search'],
+            'http with another port' => ['http', 8080, 443, UrlReferenceType::ABSOLUTE_URL, 'http://example.com:8080/search'],
+            'https with its default port' => ['https', 80, 443, UrlReferenceType::ABSOLUTE_URL, 'https://example.com/search'],
+            'https with another port' => ['https', 80, 8443, UrlReferenceType::ABSOLUTE_URL, 'https://example.com:8443/search'],
+            'http port is not the one of https' => ['https', 8080, 443, UrlReferenceType::ABSOLUTE_URL, 'https://example.com/search'],
+            'https port is not the one of http' => ['http', 80, 8443, UrlReferenceType::ABSOLUTE_URL, 'http://example.com/search'],
+            'network path with another port' => ['http', 8080, 443, UrlReferenceType::NETWORK_PATH, '//example.com:8080/search'],
+            'network path with its default port' => ['https', 80, 443, UrlReferenceType::NETWORK_PATH, '//example.com/search'],
+        ];
+    }
+
+    #[DataProvider('portsOfTheUrlProvider')]
+    public function testThePortIsOnlyInTheUrlWhenItIsNotTheDefaultOfTheScheme(
+        string $scheme,
+        int $httpPort,
+        int $httpsPort,
+        UrlReferenceType $type,
+        string $expected
+    ): void {
+        $context = new RequestContext('', 'GET', 'example.com', $scheme, $httpPort, $httpsPort);
+
+        $this->assertSame($expected, (new UrlGenerator($this->collection, $context))->generate('search', [], $type));
     }
 }

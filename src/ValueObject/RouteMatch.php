@@ -25,7 +25,7 @@ final class RouteMatch implements RouteMatchInterface
      * Creates a new Match instance.
      *
      * @param RouteInterface $route The matched route.
-     * @param array $parameters Parameters extracted from the URI and route.
+     * @param array<string, mixed> $parameters Parameters extracted from the URI and route.
      * @param string|null $module Optional module for the matched route.
      */
     public function __construct(

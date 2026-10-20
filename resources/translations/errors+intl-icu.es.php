@@ -28,6 +28,14 @@ return [
         'El nombre es obligatorio en la ruta "{route}".',
     'Path is required in route "{route}".' =>
         'El path es obligatorio en la ruta "{route}".',
+    'The key {key} of route "{route}" must be a string; {type} given.' =>
+        'La clave {key} de la ruta "{route}" debe ser un string; se recibió {type}.',
+    'The key handler of route "{route}" must be a string, an array or a Closure; {type} given.' =>
+        'La clave handler de la ruta "{route}" debe ser un string, un array o un Closure; se recibió {type}.',
+    'The key defaults of route "{route}" must be an array with names as keys.' =>
+        'La clave defaults de la ruta "{route}" debe ser un array con nombres como claves.',
+    'The key {key} of route "{route}" must be a list of strings.' =>
+        'La clave {key} de la ruta "{route}" debe ser una lista de strings.',
     'Handler is required in route "{route}".' =>
         'El manejador (handler) es obligatorio en la ruta "{route}".',
     'The path of the request is not valid.' =>
@@ -42,6 +50,20 @@ return [
         'Directorio inválido: {directory}',
 
     // URL generator.
+    'The server variable {variable} must be a string; {type} given.' =>
+        'La variable del servidor {variable} debe ser un string; se recibió {type}.',
+    'The pattern of the route "{route}" could not be processed: {error}' =>
+        'No se pudo procesar el patrón de la ruta "{route}": {error}',
+    'Unable to generate a URL for the route "{pattern}": {error}' =>
+        'No se pudo generar la URL de la ruta "{pattern}": {error}',
+    'Parameter "{parameter}" of route "{route}" must be a string, a number, a boolean or an object that can be converted to a string; {type} given.' =>
+        'El parámetro "{parameter}" de la ruta "{route}" debe ser un string, un número, un booleano o un objeto que se pueda convertir a string; se recibió {type}.',
+    'The context attribute {attribute} must be an array; {type} given.' =>
+        'El atributo de contexto {attribute} debe ser un arreglo; se recibió {type}.',
+    'The key {key} of the request context must be a string; {type} given.' =>
+        'La clave {key} del contexto de la petición debe ser un string; se recibió {type}.',
+    'The key URL_PORT of the request context must be a port number from 1 to 65535; {type} given.' =>
+        'La clave URL_PORT del contexto de la petición debe ser un número de puerto de 1 a 65535; se recibió {type}.',
     'Parameter "{parameter}" is required for route "{route}" but was not provided.' =>
         'El parámetro "{parameter}" es obligatorio para la ruta "{route}" pero no fue entregado.',
     'Unable to generate a URL for the named route "{name}" as such route does not exist.' =>

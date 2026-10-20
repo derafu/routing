@@ -20,6 +20,7 @@ use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Exception\UrlGeneratorException;
 use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
+use Stringable;
 
 /**
  * Generates URLs for named routes.
@@ -87,7 +88,7 @@ final class UrlGenerator implements UrlGeneratorInterface
      * Generates a URL path by replacing placeholders in the route pattern.
      *
      * @param RouteInterface $route The route
-     * @param array $parameters Parameters to replace in the pattern
+     * @param array<string, mixed> $parameters Parameters to replace in the pattern
      * @return string The generated path
      */
     private function generatePath(RouteInterface $route, array $parameters): string
@@ -111,22 +112,48 @@ final class UrlGenerator implements UrlGeneratorInterface
                     ]);
                 }
 
-                return (string)$parameters[$name];
+                return $this->urlValue($parameters[$name], $name, $pattern);
             },
             $pattern
-        );
+        ) ?? throw UrlGeneratorException::forPatternFailure($pattern, preg_last_error_msg());
 
         // Second pass: handle optional parameters.
         $path = preg_replace_callback(
             '#/({[^:}]+\?(?::[^}]+)?})#',
-            function ($matches) use ($parameters) {
+            function ($matches) use ($parameters, $pattern) {
                 $name = trim($matches[1], '{}:?');
-                return isset($parameters[$name]) ? '/' . $parameters[$name] : '';
+                return isset($parameters[$name])
+                    ? '/' . $this->urlValue($parameters[$name], $name, $pattern)
+                    : '';
             },
             $path
-        );
+        ) ?? throw UrlGeneratorException::forPatternFailure($pattern, preg_last_error_msg());
 
         return $path;
+    }
+
+    /**
+     * Converts the value of a parameter to the text that goes in the path.
+     *
+     * @param mixed $value The value of the parameter.
+     * @param string $name The name of the parameter.
+     * @param string $route The pattern of the path of the route.
+     * @return string The text for the path.
+     * @throws InvalidArgumentException If the value is not a string, a number,
+     * a boolean or an object that can be converted to a string.
+     */
+    private function urlValue(mixed $value, string $name, string $route): string
+    {
+        if (is_scalar($value) || $value instanceof Stringable) {
+            return (string) $value;
+        }
+
+        throw new InvalidArgumentException([
+            'Parameter "{parameter}" of route "{route}" must be a string, a number, a boolean or an object that can be converted to a string; {type} given.',
+            'parameter' => $name,
+            'route' => $route,
+            'type' => get_debug_type($value),
+        ]);
     }
 
     /**

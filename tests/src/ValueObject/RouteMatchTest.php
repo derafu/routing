@@ -23,6 +23,10 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Route::class)]
 final class RouteMatchTest extends TestCase
 {
+    /**
+     * @param string|array<array-key, mixed>|Closure $handler
+     * @param array<string, mixed> $defaults
+     */
     #[DataProvider('matchDataProvider')]
     public function testMatchGetters(
         string $name,
@@ -53,6 +57,9 @@ final class RouteMatchTest extends TestCase
         $this->assertFalse($match->hasAnyRole([]));
     }
 
+    /**
+     * @return array<string, array{string, string, string|array<array-key, mixed>|Closure, array<string, mixed>, string|null}>
+     */
     public static function matchDataProvider(): array
     {
         $closure = function () {
@@ -88,5 +95,15 @@ final class RouteMatchTest extends TestCase
                 'blog',
             ],
         ];
+    }
+
+    public function testTheMatchGivesThePathAndTheDefaultsOfItsRoute(): void
+    {
+        $route = new Route('user', '/users/{id}', 'UserController@show', ['lang' => 'es']);
+        $match = new RouteMatch($route, ['id' => '5', 'lang' => 'es']);
+
+        $this->assertSame('/users/{id}', $match->getPath());
+        $this->assertSame(['lang' => 'es'], $match->getDefaults());
+        $this->assertSame(['id' => '5', 'lang' => 'es'], $match->getParameters());
     }
 }

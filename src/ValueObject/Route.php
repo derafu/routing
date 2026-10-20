@@ -25,10 +25,10 @@ final class Route implements RouteInterface
      *
      * @param string $name The name of the route.
      * @param string $path The URI path for this route.
-     * @param string|array|Closure $handler The route handler.
-     * @param array $defaults Optional default values for the parameters of the route.
-     * @param array $methods Optional methods allowed for the route.
-     * @param array $roles Optional roles allowed for the route.
+     * @param string|array<array-key, mixed>|Closure $handler The route handler.
+     * @param array<string, mixed> $defaults Optional default values for the parameters of the route.
+     * @param list<string> $methods Optional methods allowed for the route.
+     * @param list<string> $roles Optional roles allowed for the route.
      */
     public function __construct(
         private readonly string $name,

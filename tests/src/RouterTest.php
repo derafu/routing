@@ -14,13 +14,16 @@ namespace Derafu\TestsRouting;
 
 use Closure;
 use Derafu\Routing\Collection;
+use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\InvalidPathException;
 use Derafu\Routing\Exception\MethodNotAllowedException;
 use Derafu\Routing\Exception\RouteNotFoundException;
+use Derafu\Routing\Exception\RouterException;
 use Derafu\Routing\Parser\DynamicParser;
 use Derafu\Routing\Parser\StaticParser;
 use Derafu\Routing\Router;
 use Derafu\Routing\UrlGenerator;
+use Derafu\Routing\ValueObject\RequestContext;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
 use Derafu\Translation\Contract\TranslatableInterface;
@@ -28,7 +31,9 @@ use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Throwable;
 
+#[CoversClass(RequestContext::class)]
 #[CoversClass(Router::class)]
 #[CoversClass(Collection::class)]
 #[CoversClass(StaticParser::class)]
@@ -62,6 +67,16 @@ final class RouterTest extends TestCase
             'without name' => [[['path' => '/', 'handler' => 'home']], 'Name is required in route "0".'],
             'without path' => [[['name' => 'home', 'handler' => 'home']], 'Path is required in route "home".'],
             'without handler' => [[['name' => 'home', 'path' => '/']], 'Handler is required in route "home".'],
+            'name that is not a string' => [[['name' => 5, 'path' => '/', 'handler' => 'home']], 'The key name of route "0" must be a string; int given.'],
+            'path that is not a string' => [['home' => ['path' => ['/'], 'handler' => 'home']], 'The key path of route "home" must be a string; array given.'],
+            'handler that is not valid' => [['home' => ['path' => '/', 'handler' => 5]], 'The key handler of route "home" must be a string, an array or a Closure; int given.'],
+            'defaults that are not an array' => [['home' => ['path' => '/', 'handler' => 'h', 'defaults' => 'id']], 'The key defaults of route "home" must be an array with names as keys.'],
+            'defaults with a number as key' => [['home' => ['path' => '/', 'handler' => 'h', 'defaults' => [0 => 'id']]], 'The key defaults of route "home" must be an array with names as keys.'],
+            'methods that are not an array' => [['home' => ['path' => '/', 'handler' => 'h', 'methods' => 'GET']], 'The key methods of route "home" must be a list of strings.'],
+            'methods with a value that is not a string' => [['home' => ['path' => '/', 'handler' => 'h', 'methods' => ['GET', 5]]], 'The key methods of route "home" must be a list of strings.'],
+            'methods that are not a list' => [['home' => ['path' => '/', 'handler' => 'h', 'methods' => ['a' => 'GET']]], 'The key methods of route "home" must be a list of strings.'],
+            'roles that are not an array' => [['home' => ['path' => '/', 'handler' => 'h', 'roles' => 'admin']], 'The key roles of route "home" must be a list of strings.'],
+            'roles with a value that is not a string' => [['home' => ['path' => '/', 'handler' => 'h', 'roles' => [1]]], 'The key roles of route "home" must be a list of strings.'],
         ];
     }
 
@@ -78,6 +93,37 @@ final class RouterTest extends TestCase
             $this->assertInstanceOf(TranslatableInterface::class, $e);
             $this->assertSame($message, $e->getMessage());
         }
+    }
+
+    public function testTheHandlerOfARouteConfigurationCanBeAStringAnArrayOrAClosure(): void
+    {
+        $closure = static fn (): string => 'closure';
+        $array = ['controller' => 'UserController', 'action' => 'index'];
+        $router = new Router(
+            parsers: [new StaticParser()],
+            routes: [
+                'closure' => ['path' => '/closure', 'handler' => $closure],
+                'array' => ['path' => '/array', 'handler' => $array],
+                '/string' => 'string.html.twig',
+            ]
+        );
+
+        $this->assertSame($closure, $router->match('/closure')->getHandler());
+        $this->assertSame($array, $router->match('/array')->getHandler());
+        $this->assertSame('string.html.twig', $router->match('/string')->getHandler());
+    }
+
+    public function testTheMethodsAndTheDefaultsOfARouteConfigurationAreKept(): void
+    {
+        $router = new Router(
+            parsers: [new StaticParser()],
+            routes: ['home' => ['path' => '/', 'handler' => 'h', 'methods' => ['get', 'post'], 'defaults' => ['lang' => 'es']]]
+        );
+
+        $match = $router->match('/', 'GET');
+
+        $this->assertSame(['GET', 'POST'], $match->getMethods());
+        $this->assertSame(['lang' => 'es'], $match->getParameters());
     }
 
     public function testHasTellsWhetherARouteNameIsDefined(): void
@@ -129,6 +175,9 @@ final class RouterTest extends TestCase
         $this->assertFalse($this->router->has('About'));
     }
 
+    /**
+     * @param string|array<array-key, mixed>|Closure $handler
+     */
     #[DataProvider('provideRoutes')]
     public function testAddAndMatchRoute(
         string $path,
@@ -147,6 +196,9 @@ final class RouterTest extends TestCase
         }
     }
 
+    /**
+     * @return array<string, array{string, string|array<array-key, mixed>|Closure, string, bool}>
+     */
     public static function provideRoutes(): array
     {
         $handler = function () {
@@ -192,6 +244,11 @@ final class RouterTest extends TestCase
         ];
     }
 
+    /**
+     * @param string|array<array-key, mixed>|Closure $handler
+     * @param list<string> $routeMethods
+     * @param class-string<Throwable>|null $expectedException
+     */
     #[DataProvider('provideRoutesWithMethod')]
     public function testMatchWithMethod(
         string $path,
@@ -208,11 +265,15 @@ final class RouterTest extends TestCase
             $match = $this->router->match($matchUri, $matchMethod);
             $this->assertSame($handler, $match->getHandler());
         } else {
+            $this->assertNotNull($expectedException);
             $this->expectException($expectedException);
             $this->router->match($matchUri, $matchMethod);
         }
     }
 
+    /**
+     * @return array<string, array{0: string, 1: string, 2: list<string>, 3: string, 4: string, 5: bool, 6?: class-string<Throwable>}>
+     */
     public static function provideRoutesWithMethod(): array
     {
         return [
@@ -397,5 +458,111 @@ final class RouterTest extends TestCase
         } finally {
             $_SERVER = $backup;
         }
+    }
+
+    public function testTheBasePathOfTheScriptIsRemovedFromTheCurrentUri(): void
+    {
+        $backup = $_SERVER;
+        $_SERVER['REQUEST_URI'] = '/app/users';
+        $_SERVER['SCRIPT_NAME'] = '/app/index.php';
+        $_SERVER['REQUEST_METHOD'] = 'post';
+
+        try {
+            $this->router->addRoute('users', '/users', 'UserController@store', [], ['POST']);
+
+            $this->assertSame('users', $this->router->match()->getName());
+        } finally {
+            $_SERVER = $backup;
+        }
+    }
+
+    public function testWithoutServerVariablesTheRootAndTheGetMethodAreUsed(): void
+    {
+        $backup = $_SERVER;
+        unset($_SERVER['REQUEST_URI'], $_SERVER['SCRIPT_NAME'], $_SERVER['REQUEST_METHOD']);
+
+        try {
+            $this->router->addRoute('root', '/', 'HomeController@index', [], ['GET']);
+
+            $this->assertSame('root', $this->router->match()->getName());
+        } finally {
+            $_SERVER = $backup;
+        }
+    }
+
+    /**
+     * @return array<string, array{string, mixed, string}>
+     */
+    public static function serverVariablesThatAreNotStringsProvider(): array
+    {
+        return [
+            'request uri' => ['REQUEST_URI', ['/users'], 'The server variable REQUEST_URI must be a string; array given.'],
+            'script name' => ['SCRIPT_NAME', 5, 'The server variable SCRIPT_NAME must be a string; int given.'],
+            'request method' => ['REQUEST_METHOD', false, 'The server variable REQUEST_METHOD must be a string; bool given.'],
+        ];
+    }
+
+    #[DataProvider('serverVariablesThatAreNotStringsProvider')]
+    public function testAServerVariableThatIsNotAStringIsReported(string $name, mixed $value, string $message): void
+    {
+        $backup = $_SERVER;
+        $_SERVER['REQUEST_URI'] = '/users';
+        $_SERVER['SCRIPT_NAME'] = '/index.php';
+        $_SERVER['REQUEST_METHOD'] = 'GET';
+        $_SERVER[$name] = $value;
+
+        try {
+            $this->router->match();
+            $this->fail('A server variable that is not a string must be reported.');
+        } catch (RouterException $e) {
+            $this->assertInstanceOf(TranslatableInterface::class, $e);
+            $this->assertSame($message, $e->getMessage());
+        } finally {
+            $_SERVER = $backup;
+        }
+    }
+
+    public function testAParserCanBeAddedAfterTheRouterWasCreated(): void
+    {
+        $router = new Router();
+        $router->addRoute('about', '/about', 'about.html.twig');
+
+        try {
+            $router->match('/about');
+            $this->fail('Without parsers no route can be matched.');
+        } catch (RouteNotFoundException $e) {
+            $this->assertSame('/about', $e->getUri());
+        }
+
+        $this->assertSame($router, $router->addParser(new StaticParser()));
+        $this->assertSame('about', $router->match('/about')->getName());
+    }
+
+    public function testTheRouterGeneratesTheUrlsOfItsRoutes(): void
+    {
+        $router = new Router();
+        $router->addRoute('user', '/users/{id}', 'UserController::show');
+
+        $this->assertSame('/users/5', $router->generate('user', ['id' => 5]));
+    }
+
+    public function testTheContextOfTheRouterIsUsedToGenerateTheUrls(): void
+    {
+        $router = new Router();
+        $router->addRoute('user', '/users/{id}', 'UserController::show');
+        $this->assertNull($router->getContext());
+
+        $context = new RequestContext('/app', 'GET', 'example.com', 'https');
+        $this->assertSame($router, $router->setContext($context));
+
+        $this->assertSame($context, $router->getContext());
+        $this->assertSame(
+            'https://example.com/app/users/5',
+            $router->generate('user', ['id' => 5], UrlReferenceType::ABSOLUTE_URL)
+        );
+        $this->assertSame(
+            '//example.com/app/users/5',
+            $router->generate('user', ['id' => 5], UrlReferenceType::NETWORK_PATH)
+        );
     }
 }

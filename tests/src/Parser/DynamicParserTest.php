@@ -12,14 +12,17 @@ declare(strict_types=1);
 
 namespace Derafu\TestsRouting\Parser;
 
+use Derafu\Routing\Exception\RouterException;
 use Derafu\Routing\Parser\DynamicParser;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(DynamicParser::class)]
+#[CoversClass(RouterException::class)]
 #[CoversClass(Route::class)]
 #[CoversClass(RouteMatch::class)]
 final class DynamicParserTest extends TestCase
@@ -31,6 +34,9 @@ final class DynamicParserTest extends TestCase
         $this->parser = new DynamicParser();
     }
 
+    /**
+     * @param array<string, string> $expectedParams
+     */
     #[DataProvider('dynamicRoutesProvider')]
     public function testParseDynamicRoutes(
         string $path,
@@ -49,6 +55,9 @@ final class DynamicParserTest extends TestCase
         }
     }
 
+    /**
+     * @return array<string, array{string, string, array<string, string>, bool}>
+     */
     public static function dynamicRoutesProvider(): array
     {
         return [
@@ -143,5 +152,55 @@ final class DynamicParserTest extends TestCase
                 true,
             ],
         ];
+    }
+
+    #[RunInSeparateProcess]
+    public function testAPathThatTheRegularExpressionCanNotProcessIsReported(): void
+    {
+        $path = '/users/{id}';
+        $route = new Route('users', $path, 'UserController@show');
+
+        // Makes the regular expressions fail when they have to backtrack, with
+        // an error of PCRE (`preg_*` functions return `false` or `null`). It
+        // is in a process of its own because PHP keeps the regular expressions
+        // that were already compiled, and the ones that were compiled with JIT
+        // do not have this limit.
+        $limits = [ini_set('pcre.jit', '0'), ini_set('pcre.backtrack_limit', '1')];
+        try {
+            $this->parser->parse('/users/1', [$route]);
+            $this->fail('A path that can not be processed must be reported.');
+        } catch (RouterException $exception) {
+            $this->assertStringStartsWith('The pattern of the route "' . $path . '" could not be processed: ', $exception->getMessage());
+        } finally {
+            ini_set('pcre.jit', (string) $limits[0]);
+            ini_set('pcre.backtrack_limit', (string) $limits[1]);
+        }
+    }
+
+    public function testTheRoutesThatAreNotDynamicAreSkipped(): void
+    {
+        $routes = [
+            new Route('about', '/about', 'PageController@about'),
+            new Route('user', '/users/{id}', 'UserController@show'),
+        ];
+
+        $match = $this->parser->parse('/users/7', $routes);
+
+        $this->assertNotNull($match);
+        $this->assertSame('user', $match->getName());
+        $this->assertNull($this->parser->parse('/about', $routes));
+    }
+
+    public function testAnOptionalParameterAfterTextTakesItsOwnSlash(): void
+    {
+        $route = new Route('blog', '/blog{page?}', 'BlogController@index');
+
+        $without = $this->parser->parse('/blog', [$route]);
+        $with = $this->parser->parse('/blog/2', [$route]);
+
+        $this->assertNotNull($without);
+        $this->assertSame([], $without->getParameters());
+        $this->assertNotNull($with);
+        $this->assertSame(['page' => '2'], $with->getParameters());
     }
 }

@@ -78,7 +78,7 @@ final class Dispatcher implements DispatcherInterface
      * Handles file-based routes (.md, .html.twig).
      *
      * @param string $file The file path.
-     * @param array $params Parameters for the file handler.
+     * @param array<string, mixed> $params Parameters for the file handler.
      * @return string The processed file content.
      * @throws DispatcherException If the file type is not supported.
      */
@@ -100,7 +100,7 @@ final class Dispatcher implements DispatcherInterface
      * Handles "Controller::action" style handlers.
      *
      * @param string $handler The handler in "Controller::action" format.
-     * @param array $params Parameters for the controller action.
+     * @param array<string, mixed> $params Parameters for the controller action.
      * @return mixed The result of the controller action.
      * @throws DispatcherException If the controller or action cannot be found.
      */
