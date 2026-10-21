@@ -18,6 +18,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
+use ReflectionProperty;
 
 /**
  * Controller with routes declared with the attribute.
@@ -99,5 +100,15 @@ final class RouteAttributeTest extends TestCase
     public function theNameThatIsGivenIsKept(): void
     {
         $this->assertSame('given', (new Route('/users/list', 'given'))->name);
+    }
+
+    #[Test]
+    public function theNameIsAStringThatCanNotBeChangedAfterwards(): void
+    {
+        $property = new ReflectionProperty(Route::class, 'name');
+
+        // Not nullable: the name that is not given is made from the path.
+        $this->assertSame('string', (string) $property->getType());
+        $this->assertTrue($property->isReadOnly());
     }
 }
