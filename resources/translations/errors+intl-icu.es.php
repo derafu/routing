@@ -49,6 +49,9 @@ return [
     'Invalid directory: {directory}' =>
         'Directorio inválido: {directory}',
 
+    'Parameter "{parameter}" of route "{route}" does not satisfy its requirement or cannot form a safe path.' =>
+        'El parámetro "{parameter}" de la ruta "{route}" no cumple su restricción o no puede formar un camino seguro.',
+
     // URL generator.
     'The server variable {variable} must be a string; {type} given.' =>
         'La variable del servidor {variable} debe ser un string; se recibió {type}.',
@@ -68,8 +71,6 @@ return [
         'El parámetro "{parameter}" es obligatorio para la ruta "{route}" pero no fue entregado.',
     'Unable to generate a URL for the named route "{name}" as such route does not exist.' =>
         'No se puede generar una URL para la ruta con nombre "{name}" porque esa ruta no existe.',
-    'Relative path generation is not implemented yet.' =>
-        'La generación de rutas relativas aún no está implementada.',
-    'Invalid reference type: "{referenceType}".' =>
-        'Tipo de referencia inválido: "{referenceType}".',
+    'A request context is required to generate a URL with reference type "{referenceType}".' =>
+        'Se requiere un contexto de solicitud para generar una URL con el tipo de referencia "{referenceType}".',
 ];

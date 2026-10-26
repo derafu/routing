@@ -17,6 +17,7 @@ use Derafu\Routing\Contract\RequestContextInterface;
 use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Exception\UrlGeneratorException;
+use Derafu\Routing\RoutePatternParser;
 use Derafu\Routing\UrlGenerator;
 use Derafu\Routing\ValueObject\RequestContext;
 use Derafu\Routing\ValueObject\Route;
@@ -34,6 +35,7 @@ use Throwable;
 #[CoversClass(Route::class)]
 #[CoversClass(RouteNotFoundException::class)]
 #[CoversClass(UrlGeneratorException::class)]
+#[CoversClass(RoutePatternParser::class)]
 final class UrlGeneratorTest extends TestCase
 {
     private Collection $collection;
@@ -150,15 +152,11 @@ final class UrlGeneratorTest extends TestCase
         $this->generator->generate('non.existent.route');
     }
 
-    public function testRelativePathNotImplemented(): void
+    public function testRelativePathsAreCalculatedFromTheCurrentDirectory(): void
     {
-        $context = $this->createStub(RequestContextInterface::class);
-        $this->generator->setContext($context);
+        $this->generator->setContext(new RequestContext(baseUrl: '/app', pathInfo: '/orders/25'));
 
-        $this->expectException(UrlGeneratorException::class);
-        $this->expectExceptionMessage('Relative path generation is not implemented yet.');
-
-        $this->generator->generate('home', [], UrlReferenceType::RELATIVE_PATH);
+        $this->assertSame('../', $this->generator->generate('home', [], UrlReferenceType::RELATIVE_PATH));
     }
 
     public function testGenerateWithOptionalParameters(): void
@@ -257,17 +255,11 @@ final class UrlGeneratorTest extends TestCase
         }
     }
 
-    public function testARelativePathIsNotImplementedYet(): void
+    public function testTheRootRelativeToItselfUsesAnExplicitCurrentDirectory(): void
     {
         $generator = new UrlGenerator($this->collection, new RequestContext());
 
-        try {
-            $generator->generate('home', [], UrlReferenceType::RELATIVE_PATH);
-            $this->fail('A relative path is not implemented yet.');
-        } catch (UrlGeneratorException $exception) {
-            $this->assertInstanceOf(TranslatableInterface::class, $exception);
-            $this->assertSame('Relative path generation is not implemented yet.', $exception->getMessage());
-        }
+        $this->assertSame('./', $generator->generate('home', [], UrlReferenceType::RELATIVE_PATH));
     }
 
     /**

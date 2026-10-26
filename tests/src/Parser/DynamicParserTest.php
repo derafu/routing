@@ -14,6 +14,7 @@ namespace Derafu\TestsRouting\Parser;
 
 use Derafu\Routing\Exception\RouterException;
 use Derafu\Routing\Parser\DynamicParser;
+use Derafu\Routing\RoutePatternParser;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -25,6 +26,7 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(RouterException::class)]
 #[CoversClass(Route::class)]
 #[CoversClass(RouteMatch::class)]
+#[CoversClass(RoutePatternParser::class)]
 final class DynamicParserTest extends TestCase
 {
     private DynamicParser $parser;

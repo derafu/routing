@@ -16,7 +16,9 @@ use Derafu\Routing\Contract\ParserInterface;
 use Derafu\Routing\Contract\RouteInterface;
 use Derafu\Routing\Contract\RouteMatchInterface;
 use Derafu\Routing\Exception\RouterException;
+use Derafu\Routing\RoutePatternParser;
 use Derafu\Routing\ValueObject\RouteMatch;
+use Derafu\Support\Url;
 
 /**
  * Parser that handles dynamic routes with parameters.
@@ -31,15 +33,17 @@ use Derafu\Routing\ValueObject\RouteMatch;
 final class DynamicParser implements ParserInterface
 {
     /**
-     * Default pattern for parameters without custom regex.
-     */
-    private const DEFAULT_PATTERN = '[^/]+';
-
-    /**
      * {@inheritDoc}
      */
     public function parse(string $uri, array $routes): ?RouteMatchInterface
     {
+        // Validate the encoded path before decoding it exactly once for matching.
+        // In particular, %2F must never become a hidden segment separator.
+        if (Url::normalizePath($uri) === null) {
+            return null;
+        }
+        $uri = rawurldecode($uri);
+
         foreach ($routes as $route) {
             if (!$this->supports($route)) {
                 continue;
@@ -74,63 +78,30 @@ final class DynamicParser implements ParserInterface
      */
     private function buildPattern(string $routePattern): string
     {
-        // Split the pattern in static and dynamic parts.
-        $segments = preg_split(
-            '/({[^}]+})/',
-            $routePattern,
-            -1,
-            PREG_SPLIT_DELIM_CAPTURE
-        ) ?: throw new RouterException([
-            'The pattern of the route "{route}" could not be processed: {error}',
-            'route' => $routePattern,
-            'error' => preg_last_error_msg(),
-        ]);
+        $segments = RoutePatternParser::parse($routePattern)
+            ?? throw new RouterException([
+                'The pattern of the route "{route}" could not be processed: {error}',
+                'route' => $routePattern,
+                'error' => preg_last_error_msg(),
+            ]);
 
         $pattern = '';
         foreach ($segments as $segment) {
-            if (empty($segment)) {
+            if (isset($segment['literal'])) {
+                $pattern .= preg_quote($segment['literal'], '#');
                 continue;
             }
 
-            // Segment is dynamic.
-            if ($segment[0] === '{') {
-                $param = trim($segment, '{}');
-
-                // Check if parameter is optional.
-                if (str_ends_with($param, '?')) {
-                    $paramName = rtrim($param, '?');
-                    if (str_ends_with($pattern, '/')) {
-                        $pattern = rtrim($pattern, '/');
-                        $pattern .= '(?:/(?P<' . $paramName . '>' . self::DEFAULT_PATTERN . '))?';
-                    } else {
-                        $pattern .= '(?:/(?P<' . $paramName . '>' . self::DEFAULT_PATTERN . '))?';
-                    }
-                }
-                // Check if it has a custom regex.
-                elseif (str_contains($param, ':')) {
-                    [$paramName, $regex] = explode(':', $param, 2);
-                    $pattern .= '(?P<' . $paramName . '>' . $regex . ')';
-                }
-                // Regular parameter.
-                else {
-                    $pattern .= '(?P<' . $param . '>' . self::DEFAULT_PATTERN . ')';
-                }
-            }
-            // Segment is static.
-            else {
-                if ($pattern === '' && $segment[0] === '/') {
-                    $pattern .= '/';
-                    $segment = substr($segment, 1);
-                }
-                if ($segment !== '') {
-                    $pattern .= preg_quote($segment, '#');
-                }
+            $capture = '(?P<' . $segment['name'] . '>' . RoutePatternParser::escapeRegexDelimiter($segment['requirement']) . ')';
+            if ($segment['optional']) {
+                $pattern = rtrim($pattern, '/');
+                $pattern .= '(?:/' . $capture . ')?';
+            } else {
+                $pattern .= $capture;
             }
         }
 
-        $finalPattern = '#^' . $pattern . '$#';
-
-        return $finalPattern;
+        return '#^' . $pattern . '$#';
     }
 
     /**

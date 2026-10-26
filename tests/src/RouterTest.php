@@ -14,6 +14,9 @@ namespace Derafu\TestsRouting;
 
 use Closure;
 use Derafu\Routing\Collection;
+use Derafu\Routing\Contract\RouteMatcherInterface;
+use Derafu\Routing\Contract\RouteRegistrarInterface;
+use Derafu\Routing\Contract\UrlGeneratorInterface;
 use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\InvalidPathException;
 use Derafu\Routing\Exception\MethodNotAllowedException;
@@ -21,11 +24,14 @@ use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Exception\RouterException;
 use Derafu\Routing\Parser\DynamicParser;
 use Derafu\Routing\Parser\StaticParser;
+use Derafu\Routing\RouteCollectionFactory;
+use Derafu\Routing\RoutePatternParser;
 use Derafu\Routing\Router;
 use Derafu\Routing\UrlGenerator;
 use Derafu\Routing\ValueObject\RequestContext;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
+use Derafu\TestsRouting\Fixture\ExternalCatalogueParser;
 use Derafu\Translation\Contract\TranslatableInterface;
 use InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -44,6 +50,8 @@ use Throwable;
 #[CoversClass(DynamicParser::class)]
 #[CoversClass(MethodNotAllowedException::class)]
 #[CoversClass(UrlGenerator::class)]
+#[CoversClass(RouteCollectionFactory::class)]
+#[CoversClass(RoutePatternParser::class)]
 final class RouterTest extends TestCase
 {
     private Router $router;
@@ -564,5 +572,67 @@ final class RouterTest extends TestCase
             '//example.com/app/users/5',
             $router->generate('user', ['id' => 5], UrlReferenceType::NETWORK_PATH)
         );
+    }
+
+    public function testTheRouterRetainsItsApiAndExposesEachCapability(): void
+    {
+        $router = new Router();
+
+        $this->assertInstanceOf(RouteMatcherInterface::class, $router);
+        $this->assertInstanceOf(RouteRegistrarInterface::class, $router);
+        $this->assertInstanceOf(UrlGeneratorInterface::class, $router);
+    }
+
+    public function testAnExternalGeneratorAndTheRouterShareTheirCatalogue(): void
+    {
+        $collection = (new RouteCollectionFactory())->create([
+            'home' => ['path' => '/', 'handler' => 'HomeController@index'],
+        ]);
+        $generator = new UrlGenerator($collection);
+        $router = new Router(
+            parsers: [new StaticParser(), new DynamicParser()],
+            routes: ['about' => ['path' => '/about', 'handler' => 'PageController@about']],
+            urlGenerator: $generator,
+            collection: $collection,
+        );
+        $router->addRoute('product', '/products/{id}', 'ProductController@show');
+
+        $this->assertSame('home', $router->match('/', 'GET')->getName());
+        $this->assertSame('/about', $generator->generate('about'));
+        $this->assertSame('/products/12', $router->generate('product', ['id' => 12]));
+        $this->assertSame('product', $router->match('/products/12', 'GET')->getName());
+        $this->assertTrue($collection->hasByName('product'));
+
+        $collection->add(new Route('contact', '/contact', 'ContactController@index'));
+        $this->assertSame('contact', $router->match('/contact', 'GET')->getName());
+        $this->assertSame('/contact', $router->generate('contact'));
+    }
+
+    public function testTheDefaultGeneratorUsesTheInjectedCatalogue(): void
+    {
+        $collection = new Collection();
+        $router = new Router(collection: $collection);
+        $router->addRoute('home', '/', 'HomeController@index');
+
+        $this->assertSame('/', $router->generate('home'));
+        $this->assertTrue($collection->hasByName('home'));
+    }
+
+    public function testADiscoveredRouteWithADifferentMethodDoesNotPreventFallback(): void
+    {
+        $external = (new RouteCollectionFactory())->create([
+            'external' => ['path' => '/products', 'handler' => 'ReadController@index', 'methods' => ['GET']],
+        ]);
+        $router = new Router(parsers: [new ExternalCatalogueParser($external), new StaticParser()]);
+        $router->addRoute('write', '/products', 'WriteController@create', methods: ['POST']);
+
+        $this->assertSame('write', $router->match('/products', 'POST')->getName());
+
+        try {
+            $router->match('/products', 'DELETE');
+            $this->fail('The method must be rejected.');
+        } catch (MethodNotAllowedException $exception) {
+            $this->assertSame(['GET', 'POST'], $exception->getAllowedMethods());
+        }
     }
 }

@@ -12,15 +12,24 @@ declare(strict_types=1);
 
 namespace Derafu\TestsRouting\Parser;
 
+use Derafu\Routing\Collection;
 use Derafu\Routing\Parser\FileSystemParser;
+use Derafu\Routing\RouteCollectionFactory;
+use Derafu\Routing\Router;
+use Derafu\Routing\UrlGenerator;
 use Derafu\Routing\ValueObject\Route;
 use Derafu\Routing\ValueObject\RouteMatch;
 use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(FileSystemParser::class)]
+#[CoversClass(Router::class)]
+#[CoversClass(RouteCollectionFactory::class)]
+#[UsesClass(Collection::class)]
+#[UsesClass(UrlGenerator::class)]
 #[CoversClass(Route::class)]
 #[CoversClass(RouteMatch::class)]
 final class FileSystemParserTest extends TestCase
@@ -223,5 +232,16 @@ final class FileSystemParserTest extends TestCase
             unlink($other . '/page.md');
             rmdir($other);
         }
+    }
+
+    public function testTheRouterDiscoversFilesWithoutAnyRegisteredRoutes(): void
+    {
+        file_put_contents($this->tempDir . '/page.md', '# Page');
+        $router = new Router(parsers: [$this->parser]);
+
+        $match = $router->match('/page', 'GET');
+
+        $this->assertSame(realpath($this->tempDir . '/page.md'), $match->getHandler());
+        $this->assertFalse($router->has($match->getName()));
     }
 }

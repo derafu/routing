@@ -19,6 +19,7 @@ use Derafu\Routing\Contract\UrlGeneratorInterface;
 use Derafu\Routing\Enum\UrlReferenceType;
 use Derafu\Routing\Exception\RouteNotFoundException;
 use Derafu\Routing\Exception\UrlGeneratorException;
+use Derafu\Support\Url;
 use Derafu\Translation\Exception\Logic\TranslatableInvalidArgumentException as InvalidArgumentException;
 use Stringable;
 
@@ -55,15 +56,21 @@ final class UrlGenerator implements UrlGeneratorInterface
         }
 
         // Generate the path by replacing parameters.
-        $path = $this->generatePath($route, $parameters);
-
-        // If context is not available or reference type is absolute path, return the path.
-        if ($this->context === null || $referenceType === UrlReferenceType::ABSOLUTE_PATH) {
-            return $path;
+        [$path, $extra] = $this->generatePath($route, $parameters);
+        $query = http_build_query($extra, '', '&', PHP_QUERY_RFC3986);
+        $suffix = $query === '' ? '' : '?' . $query;
+        $context = $this->context;
+        if ($context === null) {
+            if ($referenceType !== UrlReferenceType::ABSOLUTE_PATH) {
+                throw new UrlGeneratorException([
+                    'A request context is required to generate a URL with reference type "{referenceType}".',
+                    'referenceType' => $referenceType->name,
+                ]);
+            }
+            return $path . $suffix;
         }
 
-        // Apply reference type if context is available.
-        return $this->applyReferenceType($path, $referenceType);
+        return $this->applyReferenceType($path, $referenceType, $context) . $suffix;
     }
 
     /**
@@ -89,47 +96,74 @@ final class UrlGenerator implements UrlGeneratorInterface
      *
      * @param RouteInterface $route The route
      * @param array<string, mixed> $parameters Parameters to replace in the pattern
-     * @return string The generated path
+     * @return array{string, array<string, mixed>} The path and unused explicit parameters.
      */
-    private function generatePath(RouteInterface $route, array $parameters): string
+    private function generatePath(RouteInterface $route, array $parameters): array
     {
         $pattern = $route->getPath();
+
+        // Only explicitly supplied, unused parameters belong in the query.
+        $extra = $parameters;
 
         // Merge route-specific parameters with provided parameters.
         $parameters = array_merge($route->getDefaults(), $parameters);
 
-        // First pass: replace required parameters.
-        $path = preg_replace_callback(
-            '/{([^:}?]+)(?::[^}]+)?}/',
-            function ($matches) use ($parameters, $pattern) {
-                $name = $matches[1];
+        $segments = RoutePatternParser::parse($pattern)
+            ?? throw UrlGeneratorException::forPatternFailure($pattern, preg_last_error_msg());
 
-                if (!isset($parameters[$name])) {
-                    throw new InvalidArgumentException([
-                        'Parameter "{parameter}" is required for route "{route}" but was not provided.',
-                        'parameter' => $name,
-                        'route' => $pattern,
-                    ]);
+        $path = '';
+        foreach ($segments as $segment) {
+            if (isset($segment['literal'])) {
+                $path .= $segment['literal'];
+                continue;
+            }
+
+            $name = $segment['name'];
+            unset($extra[$name]);
+            if ($segment['optional']) {
+                $path = rtrim($path, '/');
+                if (isset($parameters[$name])) {
+                    $path .= '/' . $this->encodeParameter($parameters[$name], $name, $pattern, $segment['requirement']);
                 }
+                continue;
+            }
 
-                return $this->urlValue($parameters[$name], $name, $pattern);
-            },
-            $pattern
-        ) ?? throw UrlGeneratorException::forPatternFailure($pattern, preg_last_error_msg());
+            if (!isset($parameters[$name])) {
+                throw new InvalidArgumentException([
+                    'Parameter "{parameter}" is required for route "{route}" but was not provided.',
+                    'parameter' => $name,
+                    'route' => $pattern,
+                ]);
+            }
 
-        // Second pass: handle optional parameters.
-        $path = preg_replace_callback(
-            '#/({[^:}]+\?(?::[^}]+)?})#',
-            function ($matches) use ($parameters, $pattern) {
-                $name = trim($matches[1], '{}:?');
-                return isset($parameters[$name])
-                    ? '/' . $this->urlValue($parameters[$name], $name, $pattern)
-                    : '';
-            },
-            $path
-        ) ?? throw UrlGeneratorException::forPatternFailure($pattern, preg_last_error_msg());
+            $path .= $this->encodeParameter($parameters[$name], $name, $pattern, $segment['requirement']);
+        }
 
-        return $path;
+        return [$path, $extra];
+    }
+
+    /**
+     * Encodes a value accepted by its requirement and the safe-path policy.
+     */
+    private function encodeParameter(mixed $value, string $name, string $route, string $requirement): string
+    {
+        $value = $this->urlValue($value, $name, $route);
+        $encoded = implode('/', array_map(rawurlencode(...), explode('/', $value)));
+        $expression = '#\A(?:' . RoutePatternParser::escapeRegexDelimiter($requirement) . ')\z#D';
+        $matches = @preg_match($expression, $value);
+        if ($matches === false) {
+            throw UrlGeneratorException::forPatternFailure($route, preg_last_error_msg());
+        }
+
+        if ($matches !== 1 || Url::normalizePath('/' . $encoded) !== '/' . $encoded) {
+            throw new InvalidArgumentException([
+                'Parameter "{parameter}" of route "{route}" does not satisfy its requirement or cannot form a safe path.',
+                'parameter' => $name,
+                'route' => $route,
+            ]);
+        }
+
+        return $encoded;
     }
 
     /**
@@ -157,71 +191,67 @@ final class UrlGenerator implements UrlGeneratorInterface
     }
 
     /**
-     * Applies the reference type to make the URL absolute, network, or relative.
-     *
-     * @param string $path The path to transform.
-     * @param UrlReferenceType $referenceType The type of reference.
-     * @return string The transformed URL.
+     * Applies the reference type using the installation prefix and request context.
      */
     private function applyReferenceType(
         string $path,
-        UrlReferenceType $referenceType
+        UrlReferenceType $referenceType,
+        RequestContextInterface $context
     ): string {
-        if ($this->context === null) {
-            return $path;
-        }
+        $path = $context->getBaseUrl() . $path;
 
-        $baseUrl = $this->context->getBaseUrl();
-        $path = $baseUrl . $path;
-
-        switch ($referenceType) {
-            case UrlReferenceType::ABSOLUTE_URL:
-                return $this->context->getScheme() . '://'
-                    . $this->context->getHost()
-                    . $this->getPortString()
-                    . $path
-                ;
-
-            case UrlReferenceType::NETWORK_PATH:
-                return '//'
-                    . $this->context->getHost()
-                    . $this->getPortString()
-                    . $path
-                ;
-
-            case UrlReferenceType::RELATIVE_PATH:
-                // For simplicity, we're not implementing true relative path
-                // generation. This would require current path context and
-                // complex path transformation.
-                throw new UrlGeneratorException(
-                    'Relative path generation is not implemented yet.'
-                );
-
-            default:
-                throw new UrlGeneratorException([
-                    'Invalid reference type: "{referenceType}".',
-                    'referenceType' => $referenceType->name,
-                ]);
-        }
+        return match ($referenceType) {
+            UrlReferenceType::ABSOLUTE_PATH => $path,
+            UrlReferenceType::ABSOLUTE_URL => $context->getScheme() . '://'
+                . $context->getHost() . $this->getPortString($context) . $path,
+            UrlReferenceType::NETWORK_PATH => '//'
+                . $context->getHost() . $this->getPortString($context) . $path,
+            UrlReferenceType::RELATIVE_PATH => $this->relativePath(
+                $context->getBaseUrl() . $context->getPathInfo(),
+                $path,
+            ),
+        };
     }
 
     /**
-     * Gets the port string for URL generation if it's non-standard.
-     *
-     * @return string Port string with colon prefix or empty string.
+     * Resolves the target relative to the directory of the current request.
+     * A trailing slash identifies a directory; otherwise the final segment is
+     * the current file. Retaining the target file also clears an old query.
      */
-    private function getPortString(): string
+    private function relativePath(string $current, string $target): string
     {
-        if ($this->context === null) {
-            return '';
+        $source = explode('/', ltrim($current, '/'));
+        $destination = explode('/', ltrim($target, '/'));
+        array_pop($source);
+        $file = array_pop($destination);
+
+        $common = 0;
+        while (isset($source[$common], $destination[$common]) && $source[$common] === $destination[$common]) {
+            ++$common;
         }
 
-        $scheme = $this->context->getScheme();
-        $port = $scheme === 'https'
-            ? $this->context->getHttpsPort()
-            : $this->context->getHttpPort()
-        ;
+        $relative = str_repeat('../', count($source) - $common)
+            . implode('/', array_slice($destination, $common));
+        if ($relative !== '' && !str_ends_with($relative, '/')) {
+            $relative .= '/';
+        }
+        $relative .= $file;
 
+        if ($relative === '') {
+            return './';
+        }
+
+        // A colon in the first segment would otherwise be interpreted as a scheme.
+        return str_contains(explode('/', $relative)[0], ':') ? './' . $relative : $relative;
+    }
+
+    /**
+     * Gets the port string when it is not the default for the request scheme.
+     */
+    private function getPortString(RequestContextInterface $context): string
+    {
+        $scheme = $context->getScheme();
+        $port = $scheme === 'https' ? $context->getHttpsPort() : $context->getHttpPort();
         $standardPort = $scheme === 'https' ? 443 : 80;
 
         return $port !== $standardPort ? ':' . $port : '';
