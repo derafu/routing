@@ -36,7 +36,9 @@
         "phpstan/phpstan": "^2.3",
         "phpunit/phpunit": "^13.4",
         "nikic/php-parser": "^5.9",
-        "nyholm/psr7": "^1.8"
+        "nyholm/psr7": "^1.8",
+        "symfony/dependency-injection": "^8.1",
+        "symfony/config": "^8.1"
     },
     "suggest": {
         "nikic/php-parser": "Required by the tests of the messages of the package (Derafu\\Translation\\Lint reads the code)."
