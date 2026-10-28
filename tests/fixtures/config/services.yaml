@@ -1,0 +1,26 @@
+imports:
+    - { resource: '../../../resources/config/routing-services.yaml' }
+
+parameters:
+    derafu.routing.routes:
+        article:
+            path: '/articles/{slug}'
+            handler: 'ArticleController::show'
+        new_article:
+            path: '/articles/new'
+            handler: 'ArticleController::create'
+        about:
+            path: '/about'
+            handler: 'PagesController::about'
+        legacy:
+            path: '/legacy-about'
+            handler: 'LegacyController::about'
+
+services:
+    app.translator:
+        class: Symfony\Component\Translation\Translator
+        factory: ['Derafu\Translation\TranslatorFactory', create]
+        arguments:
+            $defaultLocale: es
+            $fallbackLocales: [en]
+            $resourceProviders: !tagged_iterator derafu_translation.resource_provider

@@ -56,18 +56,21 @@ final class Router implements RouterInterface
     /**
      * Creates a new Router instance.
      *
-     * @param list<ParserInterface> $parsers
+     * @param iterable<ParserInterface> $parsers Parsers in matching order.
      * @param array<array-key, mixed> $routes The configuration of the routes.
      * @param UrlGeneratorInterface|null $urlGenerator
      * @param CollectionInterface|null $collection A catalogue shared with an external URL generator.
      */
     public function __construct(
-        array $parsers = [],
+        iterable $parsers = [],
         array $routes = [],
         ?UrlGeneratorInterface $urlGenerator = null,
         ?CollectionInterface $collection = null
     ) {
-        $this->parsers = $parsers;
+        $this->parsers = [];
+        foreach ($parsers as $parser) {
+            $this->addParser($parser);
+        }
         $configuredRoutes = (new RouteCollectionFactory())->create($routes);
         $this->routes = $collection ?? $configuredRoutes;
         if ($collection !== null) {

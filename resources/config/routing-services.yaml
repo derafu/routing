@@ -3,6 +3,13 @@
 #
 #   imports:
 #       - { resource: '../vendor/derafu/routing/resources/config/routing-services.yaml' }
+#
+# Static and dynamic parsers share one router. Contribute additional parsers with
+# derafu_routing.parser; higher priority runs first. To enable file-based routes,
+# import routing-filesystem-services.yaml instead and configure its directories.
+
+parameters:
+    derafu.routing.routes: []
 
 services:
 
@@ -10,6 +17,32 @@ services:
         autowire: true
         autoconfigure: true
         public: false
+
+    Derafu\Routing\Contract\RouterInterface:
+        class: Derafu\Routing\Router
+        arguments:
+            $parsers: !tagged_iterator derafu_routing.parser
+            $routes: '%derafu.routing.routes%'
+            # The public generator alias points back to this router. Use its
+            # internal generator, which shares the router's route collection.
+            $urlGenerator: null
+
+    Derafu\Routing\Contract\UrlGeneratorInterface:
+        alias: Derafu\Routing\Contract\RouterInterface
+
+    Derafu\Routing\Contract\RouteRegistrarInterface:
+        alias: Derafu\Routing\Contract\RouterInterface
+
+    Derafu\Routing\Contract\RouteMatcherInterface:
+        alias: Derafu\Routing\Contract\RouterInterface
+
+    Derafu\Routing\Parser\StaticParser:
+        tags:
+            - { name: derafu_routing.parser, priority: 300 }
+
+    Derafu\Routing\Parser\DynamicParser:
+        tags:
+            - { name: derafu_routing.parser, priority: 200 }
 
     # Feeds resources/translations into the consuming app's Translator (the
     # app must pass $resourceProviders: !tagged_iterator

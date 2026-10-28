@@ -1,0 +1,7 @@
+imports:
+    - { resource: '../../../resources/config/routing-filesystem-services.yaml' }
+    - { resource: services.yaml }
+
+parameters:
+    derafu.routing.filesystem.directories:
+        - '%kernel.project_dir%/tests/fixtures/pages'

@@ -1,0 +1,7 @@
+imports:
+    - { resource: services.yaml }
+
+services:
+    Derafu\TestsRouting\Fixture\LegacyPathParser:
+        tags:
+            - { name: derafu_routing.parser, priority: 400 }

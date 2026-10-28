@@ -1,0 +1,16 @@
+# Includes the base router and adds file-based matching after static and dynamic
+# routes. Directories belong to the application; none are assumed by this package.
+imports:
+    - { resource: routing-services.yaml }
+
+parameters:
+    derafu.routing.filesystem.directories: []
+    derafu.routing.filesystem.extensions: ['.html.twig', '.md']
+
+services:
+    Derafu\Routing\Parser\FileSystemParser:
+        arguments:
+            $directories: '%derafu.routing.filesystem.directories%'
+            $extensions: '%derafu.routing.filesystem.extensions%'
+        tags:
+            - { name: derafu_routing.parser, priority: 100 }
